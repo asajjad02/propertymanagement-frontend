@@ -30,7 +30,12 @@ export function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: bool
       )}
     >
       <Icon className="h-4.5 w-4.5 shrink-0" />
-      <span className={cn(collapsed && 'hidden')}>{item.label}</span>
+      <span className={cn('flex-1', collapsed && 'hidden')}>{item.label}</span>
+      {item.soon && !collapsed && (
+        <span className="rounded-pill bg-neutral-soft px-1.5 py-0.5 font-mono text-[0.5625rem] uppercase tracking-wide text-faint">
+          Soon
+        </span>
+      )}
     </Link>
   );
 

@@ -51,15 +51,14 @@ export function useOwnersLookup() {
 
 export function useOccupantsLookup() {
   const query = occupantHooks.useAll();
-  const rows = query.data ?? [];
   // Active occupant per flat, and the set of person ids that are tenants.
   const activeByFlat = useMemo<Map<number, Occupant>>(() => {
     const m = new Map<number, Occupant>();
-    for (const occ of rows) {
+    for (const occ of query.data ?? []) {
       if (occ.status === 'active') m.set(occ.flat, occ);
     }
     return m;
-  }, [rows]);
-  const byPerson = useMemo(() => new Set(rows.map((o) => o.person)), [rows]);
+  }, [query.data]);
+  const byPerson = useMemo(() => new Set((query.data ?? []).map((o) => o.person)), [query.data]);
   return { ...query, activeByFlat, byPerson };
 }

@@ -1,6 +1,6 @@
 import { Car } from 'lucide-react';
 
-import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Vehicle } from '@/types/api';
 

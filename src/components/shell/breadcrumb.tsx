@@ -10,7 +10,11 @@ const LABELS: Record<string, string> = {
   visitors: 'Visitors',
   billing: 'Billing',
   electricity: 'Electricity',
-  'style-guide': 'Style Guide',
+  maintenance: 'Maintenance',
+  staff: 'Staff',
+  expenses: 'Expenses',
+  complaints: 'Complaints',
+  reports: 'Reports',
 };
 
 function labelFor(segment: string): string {

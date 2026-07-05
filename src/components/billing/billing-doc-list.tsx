@@ -1,7 +1,7 @@
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
 
-import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { money } from '@/lib/format';

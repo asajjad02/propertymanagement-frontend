@@ -1,30 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { usePersistedFlag } from '@/hooks/use-persisted-flag';
 
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 
-const STORAGE_KEY = 'hr.sidebarCollapsed';
-
 /** Two-part chrome: fixed sidebar + sticky topbar, scrolling content area. */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Restore persisted collapse state after mount (avoids SSR mismatch).
-  useEffect(() => {
-    setCollapsed(window.localStorage.getItem(STORAGE_KEY) === '1');
-  }, []);
-
-  function toggle() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
-      return next;
-    });
-  }
+  const [collapsed, setCollapsed] = usePersistedFlag('hr.sidebarCollapsed');
+  const toggle = () => setCollapsed(!collapsed);
 
   return (
     <TooltipProvider delayDuration={200}>

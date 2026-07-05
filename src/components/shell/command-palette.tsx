@@ -4,7 +4,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { CornerDownLeft, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 import { useAuth } from '@/providers/auth-provider';
@@ -23,17 +23,19 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   );
   const results = items.filter((i) => i.label.toLowerCase().includes(query.toLowerCase()));
 
-  useEffect(() => {
-    if (!open) setQuery('');
-  }, [open]);
+  // Reset the query whenever the palette closes (no effect needed).
+  function handleOpenChange(next: boolean) {
+    if (!next) setQuery('');
+    onOpenChange(next);
+  }
 
   function go(href: string) {
-    onOpenChange(false);
+    handleOpenChange(false);
     router.push(href);
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-[1px]" />
         <Dialog.Content className="fixed left-1/2 top-24 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 rounded-card border border-hairline bg-surface shadow-xl focus:outline-none">
