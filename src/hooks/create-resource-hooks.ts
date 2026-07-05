@@ -35,6 +35,16 @@ export function createResourceHooks<T, TInput>(
     });
   }
 
+  /** Fetch every row (walks pagination). For reference data used in joins. */
+  function useAll(params?: ListParams, options?: Partial<UseQueryOptions<T[]>>) {
+    return useQuery<T[]>({
+      queryKey: [resourceName, 'all', params ?? {}],
+      queryFn: () => resource.listAll(params),
+      staleTime: 60_000,
+      ...options,
+    });
+  }
+
   function useItem(id: number | undefined, options?: Partial<UseQueryOptions<T>>) {
     return useQuery<T>({
       queryKey: keys.detail(id ?? -1),
@@ -84,5 +94,5 @@ export function createResourceHooks<T, TInput>(
     });
   }
 
-  return { keys, useList, useItem, useCreate, useUpdate, usePatch, useDelete };
+  return { keys, useList, useAll, useItem, useCreate, useUpdate, usePatch, useDelete };
 }

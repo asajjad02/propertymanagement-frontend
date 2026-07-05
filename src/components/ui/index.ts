@@ -1,0 +1,33 @@
+// Barrel export for the UI kit. Import primitives from '@/components/ui'.
+export { Avatar } from './avatar';
+export { Badge } from './badge';
+export { Button } from './button';
+export { Card, CardBody, CardHeader, CardTitle } from './card';
+export { DataTable } from './data-table';
+export { DetailHeader } from './detail-header';
+export { DropdownMenu } from './dropdown-menu';
+export { EmptyState } from './empty-state';
+export { Field } from './field';
+export { FilterBar } from './filter-bar';
+export { InfoCard } from './info-card';
+export { Input } from './input';
+export { Label } from './label';
+export { Modal } from './modal';
+export { PageHeader } from './page-header';
+export { SearchInput } from './search-input';
+export { Segmented } from './segmented';
+export { Select } from './select';
+export { Spinner, LoadingBlock } from './spinner';
+export { StatCard, StatCardRow } from './stat-card';
+export { StatusBadge } from './status-badge';
+export { Tabs } from './tabs';
+export { Textarea } from './textarea';
+export { Tooltip, TooltipProvider } from './tooltip';
+export { TypeTag } from './type-tag';
+
+export type { InfoField } from './info-card';
+export type { MenuItem } from './dropdown-menu';
+export type { SelectOption } from './select';
+export type { SegmentedOption } from './segmented';
+export type { TabItem } from './tabs';
+export type { Tone } from './tones';

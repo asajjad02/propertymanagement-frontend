@@ -22,6 +22,8 @@ export function buildQuery(params: ListParams = {}): Record<string, string> {
 export interface Resource<T, TInput> {
   path: string;
   list: (params?: ListParams) => Promise<Paginated<T>>;
+  /** Follow pagination to collect every row. Use for reference data / joins. */
+  listAll: (params?: ListParams) => Promise<T[]>;
   get: (id: number) => Promise<T>;
   create: (payload: TInput) => Promise<T>;
   update: (id: number, payload: TInput) => Promise<T>;
@@ -41,6 +43,19 @@ export function createResource<T, TInput>(path: string): Resource<T, TInput> {
         params: buildQuery(params),
       });
       return data;
+    },
+    async listAll(params) {
+      const collected: T[] = [];
+      let page = params?.page ?? 1;
+      // Bounded loop: the backend caps page size at 20, so this walks `next`
+      // until exhausted. Reference sets (buildings, people, ...) are small.
+      for (;;) {
+        const data = await this.list({ ...params, page });
+        collected.push(...data.results);
+        if (!data.next) break;
+        page += 1;
+      }
+      return collected;
     },
     async get(id) {
       const { data } = await apiClient.get<T>(detail(id));

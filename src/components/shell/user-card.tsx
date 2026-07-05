@@ -1,0 +1,36 @@
+'use client';
+
+import { LogOut } from 'lucide-react';
+
+import { Avatar } from '@/components/ui/avatar';
+import { DropdownMenu } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/cn';
+import { useAuth } from '@/providers/auth-provider';
+
+/** Current user + role with a sign-out menu. Collapses to just the avatar. */
+export function UserCard({ collapsed }: { collapsed: boolean }) {
+  const { user, role, logout } = useAuth();
+  const name = user?.username ?? 'User';
+
+  return (
+    <DropdownMenu
+      align="start"
+      items={[{ label: 'Sign out', icon: <LogOut className="h-4 w-4" />, onSelect: () => void logout() }]}
+      trigger={
+        <button
+          className={cn(
+            'flex w-full items-center gap-2.5 rounded-control border border-hairline bg-surface p-2 text-left',
+            'hover:bg-paper transition-colors',
+            collapsed && 'justify-center border-0 bg-transparent p-0',
+          )}
+        >
+          <Avatar name={name} size="sm" />
+          <div className={cn('min-w-0 flex-1', collapsed && 'hidden')}>
+            <p className="truncate text-sm font-medium text-ink">{name}</p>
+            <p className="truncate text-xs capitalize text-muted">{role ?? '—'}</p>
+          </div>
+        </button>
+      }
+    />
+  );
+}
