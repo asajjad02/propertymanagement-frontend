@@ -4,9 +4,11 @@ Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 frontend for the Hash
 Residency apartment management system. It talks to the Django REST API in
 [`../backend`](../backend).
 
-> **Status:** groundwork only. The data layer (API client, auth, typed models,
-> query hooks) is in place. UI — layouts, pages, components, styling — is
-> intentionally not built yet, pending the wireframe and design direction.
+> **Status:** core modules built. Auth, app shell, and the Flats, Residents,
+> Visitors, and Electricity Billing screens are implemented against the live API
+> using a Radix-based UI kit and the design tokens from the wireframe spec.
+> Maintenance, Staff, Expenses, Complaints, and Reports are sidebar placeholders
+> ("Soon") awaiting their backend endpoints. See `GUIDELINES.md` for conventions.
 
 ## Getting started
 
