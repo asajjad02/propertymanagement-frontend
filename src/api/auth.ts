@@ -27,6 +27,18 @@ export async function fetchMe(): Promise<MeResponse> {
 }
 
 /**
+ * Request a password-reset email.
+ *
+ * NOTE: the backend endpoint does not exist yet — the accounts app currently
+ * exposes only register/login/refresh/logout/me. This calls the conventional
+ * path below; adjust it (or the backend) so the two match when the reset flow
+ * is implemented server-side.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiClient.post('/auth/password/reset/', { email });
+}
+
+/**
  * Blacklist the refresh token server-side, then drop local tokens. The logout
  * endpoint accepts the refresh token even with an expired access token, so a
  * failed network call still clears the client session.

@@ -1,16 +1,17 @@
 import { BillingDocList } from '@/components/billing/billing-doc-list';
 import { billsToDocItems } from '@/components/billing/to-doc-items';
-import { PersonSummaryCard } from '@/components/people/person-summary-card';
 import { InfoCard } from '@/components/ui/info-card';
 import { VehicleList } from '@/components/vehicles/vehicle-list';
 import type { useFlatDetail } from '@/hooks/use-flat-detail';
 import { AccountSummary } from './account-summary';
+import { FlatOwnerCard } from './flat-owner-card';
+import { FlatResidentCard } from './flat-resident-card';
 
 type FlatDetail = ReturnType<typeof useFlatDetail>;
 
 /** Overview tab: two-column body (info + people/vehicles | summary + bills). */
 export function FlatOverview({ detail }: { detail: FlatDetail }) {
-  const { flat, building, owner, tenant, isOwnerOccupied, vehicles, bills, charges, outstanding } = detail;
+  const { flat, building, owner, resident, residentIsOwner, activeOccupantId, vehicles, bills, charges, outstanding } = detail;
   if (!flat) return null;
 
   return (
@@ -25,16 +26,13 @@ export function FlatOverview({ detail }: { detail: FlatDetail }) {
             { label: 'Type', value: <span className="capitalize">{flat.flat_type}</span> },
           ]}
         />
-        <PersonSummaryCard
-          title="Owner" type="owner" person={owner}
-          emptyTitle="No owner assigned" emptyDescription="Assign an owner from Edit."
+        <FlatOwnerCard flatId={flat.id} owner={owner} />
+        <FlatResidentCard
+          flatId={flat.id}
+          resident={resident}
+          residentIsOwner={residentIsOwner}
+          activeOccupantId={activeOccupantId}
         />
-        {!isOwnerOccupied && (
-          <PersonSummaryCard
-            title="Tenant" type="tenant" person={tenant}
-            emptyTitle="Vacant" emptyDescription="No active tenant in this flat."
-          />
-        )}
         <VehicleList vehicles={vehicles} />
       </div>
 

@@ -4,24 +4,41 @@ import Link from 'next/link';
 import { Avatar } from '@/components/ui/avatar';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { TypeTag } from '@/components/ui/type-tag';
 import type { Person } from '@/types/api';
 
 export interface PersonSummaryCardProps {
   title: string;
   person: Person | null;
-  type: 'owner' | 'tenant';
+  /** Badge shown in the header when a person is present (e.g. a TypeTag). */
+  badge?: React.ReactNode;
+  /** Header action (e.g. a "Change" button), shown when a person is present. */
+  action?: React.ReactNode;
   emptyTitle: string;
   emptyDescription?: string;
+  /** Action rendered inside the empty state (e.g. "Assign owner"). */
+  emptyAction?: React.ReactNode;
 }
 
-/** Compact person card (owner or tenant) linking to their profile. */
-export function PersonSummaryCard({ title, person, type, emptyTitle, emptyDescription }: PersonSummaryCardProps) {
+/** Compact person card linking to their profile. Used for owner/resident slots. */
+export function PersonSummaryCard({
+  title,
+  person,
+  badge,
+  action,
+  emptyTitle,
+  emptyDescription,
+  emptyAction,
+}: PersonSummaryCardProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        {person && <TypeTag type={type} />}
+        {person ? (
+          <div className="flex items-center gap-2">
+            {badge}
+            {action}
+          </div>
+        ) : null}
       </CardHeader>
       <CardBody>
         {person ? (
@@ -38,7 +55,7 @@ export function PersonSummaryCard({ title, person, type, emptyTitle, emptyDescri
             </div>
           </Link>
         ) : (
-          <EmptyState title={emptyTitle} description={emptyDescription} className="py-6" />
+          <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} className="py-6" />
         )}
       </CardBody>
     </Card>

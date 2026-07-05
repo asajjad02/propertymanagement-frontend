@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -8,6 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { toApiError } from '@/lib/errors';
+import { runValidators, serverFieldErrors, validators, type FieldErrors } from '@/lib/validation';
 import { useAuth } from '@/providers/auth-provider';
 
 /** Username/password sign-in. Backend authenticates by username (not email). */
@@ -16,18 +18,24 @@ export function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    const clientErrors = runValidators({
+      username: () => validators.required(username, 'Username'),
+      password: () => validators.required(password, 'Password'),
+    });
+    setErrors(clientErrors);
+    if (Object.keys(clientErrors).length) return;
+
     setSubmitting(true);
     try {
       await login({ username, password });
       router.replace('/flats');
     } catch (err) {
-      setError(toApiError(err).message);
+      setErrors(serverFieldErrors(toApiError(err)));
     } finally {
       setSubmitting(false);
     }
@@ -41,36 +49,32 @@ export function LoginForm() {
         <p className="mt-1 text-sm text-muted">Manage flats, residents, billing and visitors.</p>
       </div>
 
-      <Field label="Username">
+      {errors._form && <p className="text-sm text-danger">{errors._form}</p>}
+
+      <Field label="Username" error={errors.username}>
         {(id) => (
-          <Input
-            id={id}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            required
-          />
+          <Input id={id} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
         )}
       </Field>
-      <Field label="Password">
+      <Field label="Password" error={errors.password}>
         {(id) => (
-          <Input
-            id={id}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-          />
+          <Input id={id} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         )}
       </Field>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="flex justify-end">
+        <Link href="/forgot-password" className="text-sm text-muted hover:text-ink">Forgot password?</Link>
+      </div>
 
       <Button type="submit" className="w-full justify-center" disabled={submitting}>
         {submitting && <Spinner className="text-white" />}
         Sign in
       </Button>
+
+      <p className="text-center text-sm text-muted">
+        Don’t have an account?{' '}
+        <Link href="/register" className="text-primary-text hover:underline">Create one</Link>
+      </p>
     </form>
   );
 }

@@ -53,15 +53,19 @@ export function useFlatDetail(flatId: number) {
       sum(billRows.filter((b) => b.status !== 'paid').map((b) => b.total_payable)) +
       sum(chargeRows.filter((c) => c.status !== 'paid').map((c) => c.total_due));
 
-    // A tenant card only makes sense when someone other than the owner lives there.
-    const isOwnerOccupied = !!tenant && !!owner && tenant.id === owner.id;
+    // Display rule: the resident is the active tenant, or the owner by default
+    // (owner-occupied) when there is no tenant. Neither → vacant.
+    const resident = tenant ?? owner;
+    const residentIsOwner = !tenant && !!owner;
 
     return {
       flat: flatData,
       building,
       owner,
       tenant,
-      isOwnerOccupied,
+      resident,
+      residentIsOwner,
+      activeOccupantId: tenantOcc?.id ?? null,
       vehicles: flatVehicles,
       bills: billRows,
       charges: chargeRows,
