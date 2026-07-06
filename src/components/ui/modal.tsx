@@ -23,6 +23,13 @@ export function Modal({ open, onOpenChange, title, description, children, footer
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-[1px]" />
         <Dialog.Content
+          // A portaled popper inside the dialog (Select/Dropdown/Popover) lives
+          // in a separate DOM subtree, so clicking it reads as "outside" and
+          // would dismiss the dialog. Ignore interactions from popper layers.
+          onInteractOutside={(e) => {
+            const target = e.target as Element | null;
+            if (target?.closest('[data-radix-popper-content-wrapper]')) e.preventDefault();
+          }}
           className={cn(
             'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
             'rounded-card border border-hairline bg-surface shadow-xl focus:outline-none',

@@ -6,7 +6,7 @@
  */
 import { useMemo } from 'react';
 
-import type { Building, Flat, Occupant, Owner, Person } from '@/types/api';
+import type { Building, Flat, Occupant, Owner, Person, StaffMember } from '@/types/api';
 
 import {
   buildingHooks,
@@ -14,6 +14,7 @@ import {
   occupantHooks,
   ownerHooks,
   personHooks,
+  staffMemberHooks,
 } from './resources';
 
 function byId<T extends { id: number }>(rows: T[] | undefined): Map<number, T> {
@@ -35,6 +36,12 @@ export function useBuildingsLookup() {
 export function useFlatsLookup() {
   const query = flatHooks.useAll();
   const map = useMemo<Map<number, Flat>>(() => byId(query.data), [query.data]);
+  return { ...query, map };
+}
+
+export function useStaffLookup() {
+  const query = staffMemberHooks.useAll();
+  const map = useMemo<Map<number, StaffMember>>(() => byId(query.data), [query.data]);
   return { ...query, map };
 }
 

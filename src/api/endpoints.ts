@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/api-client';
 import type {
   Building,
   BuildingInput,
+  Complaint,
+  ComplaintInput,
   ElectricityBill,
   ElectricityBillInput,
   ElectricityRate,
@@ -30,6 +32,8 @@ import type {
   PaymentInput,
   Person,
   PersonInput,
+  StaffMember,
+  StaffMemberInput,
   Vehicle,
   VehicleInput,
   Visitor,
@@ -50,6 +54,12 @@ export const vehicles = createResource<Vehicle, VehicleInput>('vehicles');
 
 // Operations
 export const visitors = createResource<Visitor, VisitorInput>('visitors');
+
+// Staff
+export const staffMembers = createResource<StaffMember, StaffMemberInput>('staff-members');
+
+// Complaints
+export const complaints = createResource<Complaint, ComplaintInput>('complaints');
 
 // Billing
 export const meters = createResource<Meter, MeterInput>('meters');

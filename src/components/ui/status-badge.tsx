@@ -9,15 +9,16 @@ export interface StatusBadgeProps {
   className?: string;
 }
 
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+function humanize(value: string): string {
+  const spaced = value.replace(/_/g, ' ');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
 /** Status pill with a leading dot, tone chosen by the StatusBadge mapping. */
 export function StatusBadge({ status, label, className }: StatusBadgeProps) {
   return (
     <Badge tone={toneForStatus(status)} dot className={className}>
-      {label ?? capitalize(status)}
+      {label ?? humanize(status)}
     </Badge>
   );
 }

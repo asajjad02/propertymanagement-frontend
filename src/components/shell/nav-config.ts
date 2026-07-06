@@ -50,7 +50,7 @@ export const navGroups: NavGroupDef[] = [
       { label: 'Maintenance', href: '/maintenance', icon: Wrench, roles: WRITE_MGMT, soon: true },
       { label: 'Staff', href: '/staff', icon: UserCog, roles: ['admin', 'manager'], soon: true },
       { label: 'Expenses', href: '/expenses', icon: Receipt, roles: WRITE_MGMT, soon: true },
-      { label: 'Complaints', href: '/complaints', icon: MessageSquare, roles: ['admin', 'manager'], soon: true },
+      { label: 'Complaints', href: '/complaints', icon: MessageSquare, roles: ['admin', 'manager'] },
       { label: 'Reports', href: '/reports', icon: BarChart3, roles: WRITE_MGMT, soon: true },
     ],
   },

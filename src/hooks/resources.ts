@@ -27,6 +27,12 @@ export const vehicleHooks = createResourceHooks('vehicles', api.vehicles);
 // Operations
 export const visitorHooks = createResourceHooks('visitors', api.visitors);
 
+// Staff
+export const staffMemberHooks = createResourceHooks('staff-members', api.staffMembers);
+
+// Complaints
+export const complaintHooks = createResourceHooks('complaints', api.complaints);
+
 // Billing
 export const meterHooks = createResourceHooks('meters', api.meters);
 export const meterReadingHooks = createResourceHooks('meter-readings', api.meterReadings);

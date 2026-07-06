@@ -22,7 +22,7 @@ const statusToTone: Record<string, Tone> = {
   // red
   overdue: 'red', failed: 'red', inactive: 'red',
   // blue
-  'checked out': 'blue',
+  'checked out': 'blue', in_progress: 'blue', 'in progress': 'blue',
   // neutral
   vacant: 'neutral', tenant: 'neutral', '—': 'neutral',
   // indigo

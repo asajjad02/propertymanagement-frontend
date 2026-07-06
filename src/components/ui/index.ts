@@ -9,6 +9,7 @@ export { DropdownMenu } from './dropdown-menu';
 export { EmptyState } from './empty-state';
 export { Field } from './field';
 export { FilterBar } from './filter-bar';
+export { ImageUploader } from './image-uploader';
 export { InfoCard } from './info-card';
 export { Input } from './input';
 export { Label } from './label';

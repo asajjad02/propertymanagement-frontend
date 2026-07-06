@@ -23,6 +23,8 @@ export type RecordStatus = 'active' | 'inactive';
 export type OccupancyStatus = 'vacant' | 'occupied';
 export type BillStatus = 'draft' | 'issued' | 'paid';
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
+export type StaffStatus = 'active' | 'inactive';
 
 // ---------------------------------------------------------------------------
 // Auth & account
@@ -318,3 +320,87 @@ export interface Payment {
 }
 
 export type PaymentInput = Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
+
+// ---------------------------------------------------------------------------
+// Staff
+// ---------------------------------------------------------------------------
+
+export interface StaffMember {
+  id: number;
+  full_name: string;
+  cnic: string;
+  phone: string;
+  emergency_contact: string;
+  designation: string;
+  joining_date: string | null;
+  salary: string;
+  status: StaffStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type StaffMemberInput = Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
+
+// ---------------------------------------------------------------------------
+// Complaints
+// ---------------------------------------------------------------------------
+
+export interface Complaint {
+  id: number;
+  flat: number;
+  complaint_type: string;
+  description: string;
+  status: ComplaintStatus;
+  assigned_staff: number | null;
+  reported_at: string;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Attached documents — only present on the detail (retrieve) response. */
+  documents?: AppDocument[];
+}
+
+/** Writable fields; status defaults to "open" and resolved_at is derived server-side. */
+export interface ComplaintInput {
+  flat: number;
+  complaint_type: string;
+  description: string;
+  status?: ComplaintStatus;
+  assigned_staff?: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Documents (Supabase-backed uploads, mediated by Django)
+// ---------------------------------------------------------------------------
+
+/** Entities a document can attach to (matches the backend DOCUMENT_TARGETS keys). */
+export type DocumentTarget =
+  | 'person'
+  | 'owner'
+  | 'occupant'
+  | 'expense'
+  | 'staff_member'
+  | 'complaint';
+
+/** Named `AppDocument` to avoid clashing with the DOM `Document` type. */
+export interface AppDocument {
+  id: number;
+  related_model: DocumentTarget;
+  related_id: number;
+  document_type: string;
+  file_name: string;
+  content_type: string;
+  size: number;
+  uploaded_by: number | null;
+  uploaded_at: string;
+  /** API endpoint that streams the file (requires auth). */
+  download_url: string;
+}
+
+/** Multipart upload payload for POST /api/documents/. */
+export interface DocumentUploadInput {
+  file: File;
+  related_model: DocumentTarget;
+  related_id: number;
+  document_type?: string;
+}

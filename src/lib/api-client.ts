@@ -50,6 +50,11 @@ apiClient.interceptors.request.use((config) => {
   if (token && !isAuthExempt(config.url)) {
     config.headers.set('Authorization', `Bearer ${token}`);
   }
+  // For file uploads, drop the JSON default so the browser sets the correct
+  // multipart/form-data content type (with the boundary).
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    config.headers.delete('Content-Type');
+  }
   return config;
 });
 
