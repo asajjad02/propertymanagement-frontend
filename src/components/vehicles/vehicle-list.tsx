@@ -4,13 +4,22 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { Vehicle } from '@/types/api';
 
-/** Read-only list of vehicles. Shared by flat detail and resident profile. */
-export function VehicleList({ vehicles, title = 'Vehicles' }: { vehicles: Vehicle[]; title?: string }) {
+export interface VehicleListProps {
+  vehicles: Vehicle[];
+  title?: string;
+  /** Optional header control (e.g. an "Add" button). */
+  headerAction?: React.ReactNode;
+  /** Optional per-row control (e.g. edit/delete menu). */
+  rowAction?: (vehicle: Vehicle) => React.ReactNode;
+}
+
+/** List of vehicles. Read-only by default; pass action slots to make it editable. */
+export function VehicleList({ vehicles, title = 'Vehicles', headerAction, rowAction }: VehicleListProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <span className="label-mono">{vehicles.length}</span>
+        {headerAction ?? <span className="label-mono">{vehicles.length}</span>}
       </CardHeader>
       {vehicles.length === 0 ? (
         <EmptyState icon={Car} title="No vehicles" className="py-8" />
@@ -28,9 +37,12 @@ export function VehicleList({ vehicles, title = 'Vehicles' }: { vehicles: Vehicl
                   </p>
                 </div>
               </div>
-              {v.parking_slot_number && (
-                <span className="font-mono text-xs text-muted">Slot {v.parking_slot_number}</span>
-              )}
+              <div className="flex items-center gap-2">
+                {v.parking_slot_number && (
+                  <span className="font-mono text-xs text-muted">Slot {v.parking_slot_number}</span>
+                )}
+                {rowAction?.(v)}
+              </div>
             </li>
           ))}
         </ul>

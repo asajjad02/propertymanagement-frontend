@@ -3,6 +3,7 @@ export { Avatar } from './avatar';
 export { Badge } from './badge';
 export { Button } from './button';
 export { Card, CardBody, CardHeader, CardTitle } from './card';
+export { ConfirmDialog } from './confirm-dialog';
 export { DataTable } from './data-table';
 export { DetailHeader } from './detail-header';
 export { DropdownMenu } from './dropdown-menu';

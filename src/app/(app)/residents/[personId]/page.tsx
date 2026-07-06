@@ -1,11 +1,11 @@
 'use client';
 
-import { FileText } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { BillingDocList } from '@/components/billing/billing-doc-list';
 import { billsToDocItems, chargesToDocItems } from '@/components/billing/to-doc-items';
+import { DocumentList } from '@/components/documents/document-list';
 import { ResidentActions } from '@/components/residents/resident-actions';
 import { ResidentOverview } from '@/components/residents/resident-overview';
 import { Avatar } from '@/components/ui/avatar';
@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/spinner';
 import { Tabs } from '@/components/ui/tabs';
 import { TypeTag } from '@/components/ui/type-tag';
-import { VehicleList } from '@/components/vehicles/vehicle-list';
+import { ResidentVehicles } from '@/components/vehicles/resident-vehicles';
 import { useResidentDetail } from '@/hooks/use-resident-detail';
 
 const TABS = [
@@ -52,10 +52,9 @@ export default function ResidentProfilePage() {
       <Tabs tabs={TABS} value={tab} onValueChange={setTab} />
 
       {tab === 'overview' && <ResidentOverview detail={detail} />}
-      {tab === 'vehicles' && <VehicleList vehicles={detail.vehicles} />}
+      {tab === 'vehicles' && <ResidentVehicles personId={person.id} vehicles={detail.vehicles} />}
       {tab === 'documents' && (
-        <EmptyState icon={FileText} title="Documents coming soon"
-          description="Document storage isn’t available in this version yet." />
+        <DocumentList relatedModel="person" relatedId={person.id} />
       )}
       {tab === 'ledger' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
