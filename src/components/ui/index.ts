@@ -14,6 +14,7 @@ export { Input } from './input';
 export { Label } from './label';
 export { Modal } from './modal';
 export { PageHeader } from './page-header';
+export { PasswordInput } from './password-input';
 export { SearchInput } from './search-input';
 export { Segmented } from './segmented';
 export { Select } from './select';

@@ -7,18 +7,25 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
 import { toApiError } from '@/lib/errors';
-import { runValidators, serverFieldErrors, validators, type FieldErrors } from '@/lib/validation';
+import {
+  passwordSatisfiesAll,
+  runValidators,
+  serverFieldErrors,
+  validators,
+  type FieldErrors,
+} from '@/lib/validation';
 import { useAuth } from '@/providers/auth-provider';
 
-/** Create an account (registers a user + their tenant account, then signs in). */
+import { PasswordChecklist } from './password-checklist';
+
+/** Create an account, then head to email verification (no tokens issued here). */
 export function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({
-    username: '', email: '', password: '', password_confirm: '', account_name: '',
-  });
+  const [form, setForm] = useState({ username: '', email: '', password: '', account_name: '' });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,9 +36,7 @@ export function RegisterForm() {
     return runValidators({
       username: () => validators.required(form.username, 'Username'),
       email: () => validators.email(form.email),
-      password: () => validators.minLength(form.password, 8),
-      password_confirm: () =>
-        form.password === form.password_confirm ? null : 'Passwords do not match.',
+      password: () => (passwordSatisfiesAll(form.password) ? null : 'Password does not meet the requirements below.'),
     });
   }
 
@@ -44,7 +49,6 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       await register(form);
-      // No tokens yet — go verify the emailed code to finish signing up.
       router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
       setErrors(serverFieldErrors(toApiError(err)));
@@ -72,14 +76,11 @@ export function RegisterForm() {
       <Field label="Email" error={errors.email}>
         {(id) => <Input id={id} type="email" value={form.email} onChange={set('email')} autoComplete="email" required />}
       </Field>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Password" error={errors.password}>
-          {(id) => <Input id={id} type="password" value={form.password} onChange={set('password')} autoComplete="new-password" required />}
-        </Field>
-        <Field label="Confirm" error={errors.password_confirm}>
-          {(id) => <Input id={id} type="password" value={form.password_confirm} onChange={set('password_confirm')} autoComplete="new-password" required />}
-        </Field>
-      </div>
+      <Field label="Password" error={errors.password}>
+        {(id) => <PasswordInput id={id} value={form.password} onChange={set('password')} autoComplete="new-password" required />}
+      </Field>
+
+      <PasswordChecklist value={form.password} />
 
       <Button type="submit" className="w-full justify-center" disabled={submitting}>
         {submitting && <Spinner className="text-white" />}

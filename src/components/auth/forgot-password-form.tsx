@@ -8,6 +8,7 @@ import { forgotPassword, resetPassword } from '@/api/auth';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
 import { toApiError } from '@/lib/errors';
 import { serverFieldErrors, validators, type FieldErrors } from '@/lib/validation';
@@ -100,10 +101,10 @@ export function ForgotPasswordForm() {
             )}
           </Field>
           <Field label="New password" error={errors.new_password}>
-            {(id) => <Input id={id} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />}
+            {(id) => <PasswordInput id={id} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />}
           </Field>
           <Field label="Confirm password" error={errors.new_password_confirm}>
-            {(id) => <Input id={id} type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />}
+            {(id) => <PasswordInput id={id} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" required />}
           </Field>
           <Button type="submit" className="w-full justify-center" disabled={busy || code.length < 6}>
             {busy && <Spinner className="text-white" />}Reset password

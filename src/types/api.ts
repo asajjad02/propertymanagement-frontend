@@ -87,7 +87,6 @@ export interface RegisterInput {
   username: string;
   email: string;
   password: string;
-  password_confirm: string;
   account_name?: string;
 }
 

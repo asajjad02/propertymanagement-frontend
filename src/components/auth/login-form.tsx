@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
 import { toApiError } from '@/lib/errors';
 import { runValidators, serverFieldErrors, validators, type FieldErrors } from '@/lib/validation';
@@ -69,7 +70,7 @@ export function LoginForm() {
       </Field>
       <Field label="Password" error={errors.password}>
         {(id) => (
-          <Input id={id} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          <PasswordInput id={id} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         )}
       </Field>
 
