@@ -6,7 +6,9 @@ import type {
   MeResponse,
   RegisterInput,
   RegisterResponse,
+  ResetPasswordInput,
   TokenPair,
+  VerifyEmailInput,
 } from '@/types/api';
 
 export async function login(input: LoginInput): Promise<TokenPair> {
@@ -15,10 +17,25 @@ export async function login(input: LoginInput): Promise<TokenPair> {
   return data;
 }
 
+/**
+ * Register a user + their account. Returns no tokens — the backend emails a
+ * verification code; the user must verify (below) to sign in.
+ */
 export async function register(input: RegisterInput): Promise<RegisterResponse> {
   const { data } = await apiClient.post<RegisterResponse>('/auth/register/', input);
-  setTokens({ access: data.access, refresh: data.refresh });
   return data;
+}
+
+/** Verify the email OTP. On success the backend returns the token pair. */
+export async function verifyEmail(input: VerifyEmailInput): Promise<TokenPair> {
+  const { data } = await apiClient.post<TokenPair>('/auth/verify-email/', input);
+  setTokens(data);
+  return data;
+}
+
+/** Re-send the email-verification code (generic response, no enumeration). */
+export async function resendOtp(email: string): Promise<void> {
+  await apiClient.post('/auth/resend-otp/', { email });
 }
 
 export async function fetchMe(): Promise<MeResponse> {
@@ -26,16 +43,14 @@ export async function fetchMe(): Promise<MeResponse> {
   return data;
 }
 
-/**
- * Request a password-reset email.
- *
- * NOTE: the backend endpoint does not exist yet — the accounts app currently
- * exposes only register/login/refresh/logout/me. This calls the conventional
- * path below; adjust it (or the backend) so the two match when the reset flow
- * is implemented server-side.
- */
-export async function requestPasswordReset(email: string): Promise<void> {
-  await apiClient.post('/auth/password/reset/', { email });
+/** Request a password-reset code by email. */
+export async function forgotPassword(email: string): Promise<void> {
+  await apiClient.post('/auth/forgot-password/', { email });
+}
+
+/** Complete a password reset with the emailed code and a new password. */
+export async function resetPassword(input: ResetPasswordInput): Promise<void> {
+  await apiClient.post('/auth/reset-password/', input);
 }
 
 /**

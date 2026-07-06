@@ -19,10 +19,12 @@ export function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [needsVerify, setNeedsVerify] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setNeedsVerify(false);
     const clientErrors = runValidators({
       username: () => validators.required(username, 'Username'),
       password: () => validators.required(password, 'Password'),
@@ -35,7 +37,10 @@ export function LoginForm() {
       await login({ username, password });
       router.replace('/flats');
     } catch (err) {
-      setErrors(serverFieldErrors(toApiError(err)));
+      const apiError = toApiError(err);
+      // 403 => account exists but email is unverified.
+      if (apiError.status === 403) setNeedsVerify(true);
+      setErrors(serverFieldErrors(apiError));
     } finally {
       setSubmitting(false);
     }
@@ -50,6 +55,12 @@ export function LoginForm() {
       </div>
 
       {errors._form && <p className="text-sm text-danger">{errors._form}</p>}
+      {needsVerify && (
+        <p className="text-sm text-muted">
+          <Link href="/verify-email" className="text-primary-text hover:underline">Verify your email</Link>{' '}
+          to finish signing up.
+        </p>
+      )}
 
       <Field label="Username" error={errors.username}>
         {(id) => (

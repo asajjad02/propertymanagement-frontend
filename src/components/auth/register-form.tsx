@@ -44,7 +44,8 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       await register(form);
-      router.replace('/flats');
+      // No tokens yet — go verify the emailed code to finish signing up.
+      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
       setErrors(serverFieldErrors(toApiError(err)));
     } finally {

@@ -46,10 +46,14 @@ export interface TokenPair {
   refresh: string;
 }
 
-/** POST /api/auth/register/ response. */
-export interface RegisterResponse extends TokenPair {
+/**
+ * POST /api/auth/register/ response. Registration no longer returns tokens —
+ * the user must verify their email (verify-email) to receive them.
+ */
+export interface RegisterResponse {
   user: User;
   account: Pick<Account, 'id' | 'name'>;
+  detail: string;
 }
 
 /** GET /api/auth/me/ response. */
@@ -57,6 +61,21 @@ export interface MeResponse {
   user: User;
   account: Account | null;
   role: Role | null;
+  email_verified: boolean;
+}
+
+/** POST /api/auth/verify-email/ — a valid 6-digit code returns a token pair. */
+export interface VerifyEmailInput {
+  email: string;
+  code: string;
+}
+
+/** POST /api/auth/reset-password/ — OTP-based password reset. */
+export interface ResetPasswordInput {
+  email: string;
+  code: string;
+  new_password: string;
+  new_password_confirm: string;
 }
 
 export interface LoginInput {

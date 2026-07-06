@@ -30,8 +30,16 @@ export const apiClient: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-/** Endpoints that must never trigger the refresh-and-retry flow. */
-const AUTH_EXEMPT = ['/auth/login/', '/auth/register/', '/auth/refresh/'];
+/** Pre-auth endpoints: never attach a token, never trigger the refresh-retry. */
+const AUTH_EXEMPT = [
+  '/auth/login/',
+  '/auth/register/',
+  '/auth/refresh/',
+  '/auth/verify-email/',
+  '/auth/resend-otp/',
+  '/auth/forgot-password/',
+  '/auth/reset-password/',
+];
 
 function isAuthExempt(url: string | undefined): boolean {
   return !!url && AUTH_EXEMPT.some((path) => url.includes(path));

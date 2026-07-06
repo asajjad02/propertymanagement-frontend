@@ -17,7 +17,15 @@ import { createContext, useCallback, useContext, useMemo, useSyncExternalStore }
 import * as authApi from '@/api/auth';
 import { queryKeys } from '@/lib/query-keys';
 import { hasStoredToken, subscribeTokens } from '@/lib/token-storage';
-import type { Account, LoginInput, RegisterInput, Role, User } from '@/types/api';
+import type {
+  Account,
+  LoginInput,
+  RegisterInput,
+  RegisterResponse,
+  Role,
+  User,
+  VerifyEmailInput,
+} from '@/types/api';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -28,7 +36,10 @@ interface AuthContextValue {
   role: Role | null;
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  /** Registers a user; does NOT sign in (email verification is required next). */
+  register: (input: RegisterInput) => Promise<RegisterResponse>;
+  /** Verifies the email OTP; on success the session is established. */
+  verifyEmail: (input: VerifyEmailInput) => Promise<void>;
   logout: () => Promise<void>;
   /** True after a role check passes; empty roles means "any role". */
   hasRole: (...roles: Role[]) => boolean;
@@ -56,9 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [queryClient],
   );
 
-  const register = useCallback(
-    async (input: RegisterInput) => {
-      await authApi.register(input);
+  // Registration only creates the account; tokens come after email verification.
+  const register = useCallback((input: RegisterInput) => authApi.register(input), []);
+
+  const verifyEmail = useCallback(
+    async (input: VerifyEmailInput) => {
+      await authApi.verifyEmail(input);
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
     },
     [queryClient],
@@ -86,10 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: status === 'authenticated',
       login,
       register,
+      verifyEmail,
       logout,
       hasRole: (...roles: Role[]) => (roles.length === 0 ? !!role : !!role && roles.includes(role)),
     };
-  }, [meQuery.data, meQuery.isPending, meQuery.isError, tokenPresent, login, register, logout]);
+  }, [meQuery.data, meQuery.isPending, meQuery.isError, tokenPresent, login, register, verifyEmail, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
