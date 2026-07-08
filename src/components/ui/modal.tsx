@@ -21,7 +21,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-[1px]" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px]" />
         <Dialog.Content
           // A portaled popper inside the dialog (Select/Dropdown/Popover) lives
           // in a separate DOM subtree, so clicking it reads as "outside" and
@@ -32,7 +32,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
           }}
           className={cn(
             'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
-            'rounded-card border border-hairline bg-surface shadow-xl focus:outline-none',
+            'rounded-card border border-hairline bg-surface shadow-pop focus:outline-none',
             className,
           )}
         >
@@ -45,7 +45,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
                 </Dialog.Description>
               )}
             </div>
-            <Dialog.Close className="rounded-control p-1 text-muted hover:bg-paper hover:text-ink">
+            <Dialog.Close className="rounded-control p-1 text-muted hover:bg-raised hover:text-ink">
               <X className="h-4 w-4" />
             </Dialog.Close>
           </div>

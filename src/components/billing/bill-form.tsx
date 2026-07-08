@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
 import { electricityBillHooks, meterHooks } from '@/hooks/resources';
 import { useFlatsLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
@@ -15,6 +16,7 @@ import { toApiError } from '@/lib/errors';
  * via "Enter reading" on the bill detail, which issues the bill.
  */
 export function BillForm({ onDone }: { onDone: () => void }) {
+  const toast = useToast();
   const flats = useFlatsLookup();
   const create = electricityBillHooks.useCreate();
   const [flat, setFlat] = useState('');
@@ -49,6 +51,7 @@ export function BillForm({ onDone }: { onDone: () => void }) {
         previous_reading: prevReading,
         previous_outstanding: prevOutstanding,
       });
+      toast.success('Draft bill created', 'Enter the meter reading to issue it.');
       onDone();
     } catch (err) {
       setError(toApiError(err).message);

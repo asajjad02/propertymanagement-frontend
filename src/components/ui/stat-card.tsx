@@ -14,12 +14,17 @@ export interface StatCardProps {
 /** A single metric tile: mono-caps label, large value, optional sub + dot. */
 export function StatCard({ label, value, sub, tone, className }: StatCardProps) {
   return (
-    <div className={cn('bg-surface border border-hairline rounded-card px-5 py-4', className)}>
+    <div
+      className={cn(
+        'bg-surface border border-hairline rounded-card px-5 py-4 transition-colors hover:border-muted/40',
+        className,
+      )}
+    >
       <div className="flex items-center gap-2">
         {tone && <span className={cn('h-1.5 w-1.5 rounded-pill', toneClasses[tone].dot)} />}
         <span className="label-mono">{label}</span>
       </div>
-      <div className="mt-2 font-display text-3xl leading-none text-ink tabular-nums">{value}</div>
+      <div className="display mt-2.5 text-[1.9rem] text-ink tabular-nums">{value}</div>
       {sub != null && <div className="mt-1.5 text-xs text-muted">{sub}</div>}
     </div>
   );

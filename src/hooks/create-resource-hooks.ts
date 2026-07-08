@@ -40,7 +40,9 @@ export function createResourceHooks<T, TInput>(
     return useQuery<T[]>({
       queryKey: [resourceName, 'all', params ?? {}],
       queryFn: () => resource.listAll(params),
-      staleTime: 60_000,
+      // Reference sets (buildings, people, owners, occupants) are joined into
+      // nearly every screen and change infrequently — cache them hard.
+      staleTime: 5 * 60_000,
       ...options,
     });
   }

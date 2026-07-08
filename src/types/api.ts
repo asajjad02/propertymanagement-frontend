@@ -24,6 +24,7 @@ export type OccupancyStatus = 'vacant' | 'occupied';
 export type BillStatus = 'draft' | 'issued' | 'paid';
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
 export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
+export type ComplaintPriority = 'emergency' | 'urgent' | 'routine';
 export type StaffStatus = 'active' | 'inactive';
 
 // ---------------------------------------------------------------------------
@@ -58,13 +59,55 @@ export interface RegisterResponse {
   detail: string;
 }
 
+/** GET /api/search/?q= — global record search result. */
+export type SearchResultType = 'flat' | 'resident' | 'bill' | 'complaint' | 'visitor';
+
+export interface SearchResult {
+  type: SearchResultType;
+  id: number;
+  title: string;
+  subtitle: string;
+}
+
 /** GET /api/auth/me/ response. */
 export interface MeResponse {
   user: User;
   account: Account | null;
   role: Role | null;
   email_verified: boolean;
+  full_name: string;
+  phone: string;
 }
+
+/** PATCH /api/auth/me/ — the user editing their own profile. */
+export interface ProfileUpdateInput {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+}
+
+/** POST /api/auth/change-password/. */
+export interface ChangePasswordInput {
+  current_password: string;
+  new_password: string;
+}
+
+/** GET/PATCH /api/account/ — the society/account settings. */
+export interface AccountDetails {
+  id: number;
+  name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  address: string;
+  status: AccountStatus;
+  slug: string;
+}
+
+export type AccountUpdateInput = Pick<
+  AccountDetails,
+  'name' | 'contact_person' | 'phone' | 'email' | 'address'
+>;
 
 /** POST /api/auth/verify-email/ — a valid 6-digit code returns a token pair. */
 export interface VerifyEmailInput {
@@ -123,6 +166,21 @@ export interface Flat {
 
 export type FlatInput = Omit<Flat, 'id' | 'created_at' | 'updated_at'>;
 
+/** Payload for POST /api/flats/bulk_create/ — one flat per number in `flat_numbers`. */
+export interface BulkFlatsInput {
+  building: number;
+  flat_type: string;
+  floor_number?: number;
+  occupancy_status?: OccupancyStatus;
+  flat_numbers: string[];
+}
+
+/** Result of a bulk flat create: how many were made, and which numbers were skipped. */
+export interface BulkFlatsResult {
+  created: number;
+  skipped: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Residents
 // ---------------------------------------------------------------------------
@@ -180,6 +238,39 @@ export interface Vehicle {
 }
 
 export type VehicleInput = Omit<Vehicle, 'id' | 'created_at' | 'updated_at'>;
+
+export type InspectionKind = 'move_in' | 'move_out';
+
+export interface Inspection {
+  id: number;
+  flat: number;
+  occupant: number | null;
+  kind: InspectionKind;
+  inspection_date: string;
+  notes: string;
+  created_at: string;
+}
+
+export type InspectionInput = Omit<Inspection, 'id' | 'created_at'>;
+
+export type DepositStatus = 'held' | 'settled' | 'refunded';
+
+export interface SecurityDeposit {
+  id: number;
+  flat: number;
+  occupant: number | null;
+  amount: string;
+  status: DepositStatus;
+  held_date: string | null;
+  settled_date: string | null;
+  deductions: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Create/patch payload — all fields optional so a settle can PATCH a subset. */
+export type SecurityDepositInput = Partial<Omit<SecurityDeposit, 'id' | 'created_at' | 'updated_at'>>;
 
 // ---------------------------------------------------------------------------
 // Operations
@@ -259,6 +350,7 @@ export interface ElectricityBill {
   units_consumed: string;
   unit_rate: string;
   electricity_charge: string;
+  maintenance_charge: string;
   previous_outstanding: string;
   total_payable: string;
   status: BillStatus;
@@ -341,6 +433,34 @@ export interface StaffMember {
 
 export type StaffMemberInput = Omit<StaffMember, 'id' | 'created_at' | 'updated_at'>;
 
+export type AttendanceStatus = 'present' | 'absent' | 'leave';
+
+export interface AttendanceRecord {
+  id: number;
+  staff_member: number;
+  attendance_date: string;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  status: AttendanceStatus;
+  notes: string;
+  created_at: string;
+}
+
+export type AttendanceRecordInput = Omit<AttendanceRecord, 'id' | 'created_at'>;
+
+export interface SalaryPayment {
+  id: number;
+  staff_member: number;
+  payment_date: string;
+  amount: string;
+  payment_method: string;
+  reference_number: string;
+  notes: string;
+  created_at: string;
+}
+
+export type SalaryPaymentInput = Omit<SalaryPayment, 'id' | 'created_at'>;
+
 // ---------------------------------------------------------------------------
 // Complaints
 // ---------------------------------------------------------------------------
@@ -350,10 +470,13 @@ export interface Complaint {
   flat: number;
   complaint_type: string;
   description: string;
+  priority: ComplaintPriority;
   status: ComplaintStatus;
   assigned_staff: number | null;
   reported_at: string;
   resolved_at: string | null;
+  resolution_note: string;
+  resolution_cost: string | null;
   created_at: string;
   updated_at: string;
   /** Attached documents — only present on the detail (retrieve) response. */
@@ -365,8 +488,11 @@ export interface ComplaintInput {
   flat: number;
   complaint_type: string;
   description: string;
+  priority?: ComplaintPriority;
   status?: ComplaintStatus;
   assigned_staff?: number | null;
+  resolution_note?: string;
+  resolution_cost?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -380,7 +506,9 @@ export type DocumentTarget =
   | 'occupant'
   | 'expense'
   | 'staff_member'
-  | 'complaint';
+  | 'complaint'
+  | 'electricity_bill'
+  | 'inspection';
 
 /** Named `AppDocument` to avoid clashing with the DOM `Document` type. */
 export interface AppDocument {

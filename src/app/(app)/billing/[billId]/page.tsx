@@ -24,7 +24,7 @@ export default function BillDetailPage() {
   return (
     <div className="space-y-6">
       <DetailHeader
-        backHref="/billing/electricity"
+        backHref="/billing"
         backLabel="All bills"
         title={`Bill #${bill.id}`}
         status={<StatusBadge status={bill.status} />}
@@ -36,7 +36,7 @@ export default function BillDetailPage() {
         <Invoice bill={bill} flat={flat} building={building} meterNumber={meterNumber} />
         <div className="space-y-6">
           <PaymentPanel bill={bill} payments={payments} />
-          <SendPanel />
+          <SendPanel billId={bill.id} />
         </div>
       </div>
     </div>

@@ -22,7 +22,7 @@ export function NewBillButton() {
         <Plus className="h-4 w-4" />
         New Bill
       </Button>
-      <Modal open={open} onOpenChange={setOpen} title="New electricity bill" description="Create a draft, then enter the meter reading to issue it.">
+      <Modal open={open} onOpenChange={setOpen} title="New monthly bill" description="Create a draft for the flat's meter. Entering the reading calculates electricity, adds the fixed maintenance charge, and issues the combined bill.">
         <BillForm onDone={() => setOpen(false)} />
       </Modal>
     </>

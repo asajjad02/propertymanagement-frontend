@@ -12,15 +12,20 @@ import type { ResidentRow } from '@/hooks/use-resident-rows';
 export function ResidentsTable({
   rows,
   isLoading,
+  ordering,
+  onOrderingChange,
   onRowClick,
 }: {
   rows: ResidentRow[];
   isLoading: boolean;
+  ordering?: string | null;
+  onOrderingChange?: (ordering: string | null) => void;
   onRowClick: (row: ResidentRow) => void;
 }) {
   const columns = useMemo<ColumnDef<ResidentRow, unknown>[]>(
     () => [
       {
+        id: 'full_name',
         header: 'Name',
         accessorFn: (r) => r.person.full_name,
         cell: (c) => (
@@ -29,6 +34,7 @@ export function ResidentsTable({
             <span className="font-medium text-ink">{c.getValue<string>()}</span>
           </div>
         ),
+        meta: { sortable: true, sortField: 'full_name' },
       },
       {
         header: 'Type',
@@ -61,7 +67,10 @@ export function ResidentsTable({
       columns={columns}
       data={rows}
       isLoading={isLoading}
+      ordering={ordering}
+      onOrderingChange={onOrderingChange}
       onRowClick={onRowClick}
+      ariaLabel="Residents"
       emptyTitle="No residents found"
       emptyDescription="Add a resident or adjust your filters."
     />

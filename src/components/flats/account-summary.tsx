@@ -20,7 +20,7 @@ export function AccountSummary({
       <CardBody className="space-y-4">
         <div>
           <p className="label-mono">Outstanding dues</p>
-          <p className={`mt-1 font-display text-3xl ${clear ? 'text-ok' : 'text-danger'}`}>
+          <p className={`mt-1 display text-3xl tabular-nums ${clear ? 'text-ok' : 'text-danger'}`}>
             {clear ? money(0) : money(outstanding)}
           </p>
           <p className="mt-1 text-xs text-muted">

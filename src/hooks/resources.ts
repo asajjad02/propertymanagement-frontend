@@ -23,12 +23,19 @@ export const personHooks = createResourceHooks('people', api.people);
 export const ownerHooks = createResourceHooks('owners', api.owners);
 export const occupantHooks = createResourceHooks('occupants', api.occupants);
 export const vehicleHooks = createResourceHooks('vehicles', api.vehicles);
+export const inspectionHooks = createResourceHooks('inspections', api.inspections);
+export const securityDepositHooks = createResourceHooks('security-deposits', api.securityDeposits);
 
 // Operations
 export const visitorHooks = createResourceHooks('visitors', api.visitors);
 
 // Staff
 export const staffMemberHooks = createResourceHooks('staff-members', api.staffMembers);
+export const attendanceHooks = createResourceHooks('attendance-records', api.attendanceRecords);
+export const salaryPaymentHooks = createResourceHooks('salary-payments', api.salaryPayments);
+
+// Team (account memberships — admin only)
+export const teamHooks = createResourceHooks('team', api.team);
 
 // Complaints
 export const complaintHooks = createResourceHooks('complaints', api.complaints);

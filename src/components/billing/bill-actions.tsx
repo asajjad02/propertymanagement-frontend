@@ -4,9 +4,12 @@ import { CheckCheck, Download, FileInput, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/toast';
 import { useMarkElectricityBillPaid } from '@/hooks/resources';
+import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
 import type { ElectricityBill } from '@/types/api';
 
@@ -16,11 +19,23 @@ import { RecordPaymentForm } from './record-payment-form';
 /** Bill header actions, gated by status and role. PDF is deferred (disabled). */
 export function BillActions({ bill }: { bill: ElectricityBill }) {
   const { hasRole } = useAuth();
+  const toast = useToast();
   const markPaid = useMarkElectricityBillPaid();
   const [reading, setReading] = useState(false);
   const [payment, setPayment] = useState(false);
+  const [confirmPaid, setConfirmPaid] = useState(false);
 
   const canWrite = hasRole('admin', 'manager', 'accountant');
+
+  async function onMarkPaid() {
+    try {
+      await markPaid.mutateAsync(bill.id);
+      toast.success('Bill marked paid');
+      setConfirmPaid(false);
+    } catch (err) {
+      toast.error('Could not mark paid', toApiError(err).message);
+    }
+  }
 
   return (
     <>
@@ -41,7 +56,7 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
 
       {canWrite && bill.status === 'issued' && (
         <>
-          <Button variant="secondary" size="sm" disabled={markPaid.isPending} onClick={() => markPaid.mutate(bill.id)}>
+          <Button variant="secondary" size="sm" disabled={markPaid.isPending} onClick={() => setConfirmPaid(true)}>
             <CheckCheck className="h-4 w-4" />
             Mark paid
           </Button>
@@ -59,6 +74,16 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
       <Modal open={payment} onOpenChange={setPayment} title="Record payment">
         <RecordPaymentForm billId={bill.id} defaultAmount={bill.total_payable} onDone={() => setPayment(false)} />
       </Modal>
+
+      <ConfirmDialog
+        open={confirmPaid}
+        onOpenChange={setConfirmPaid}
+        title={`Mark bill #${bill.id} as paid?`}
+        description="This settles the bill in full and can't be undone. Use “Record payment” instead if you're logging a partial or specific payment."
+        confirmLabel="Mark paid"
+        loading={markPaid.isPending}
+        onConfirm={onMarkPaid}
+      />
     </>
   );
 }

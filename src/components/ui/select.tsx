@@ -51,7 +51,7 @@ export function Select({
         <RadixSelect.Content
           position="popper"
           sideOffset={4}
-          className="z-50 overflow-hidden rounded-control border border-hairline bg-surface shadow-lg"
+          className="z-50 overflow-hidden rounded-control border border-hairline bg-surface shadow-pop"
         >
           <RadixSelect.Viewport className="p-1">
             {options.map((opt) => (
@@ -60,7 +60,7 @@ export function Select({
                 value={opt.value}
                 className={cn(
                   'relative flex cursor-pointer select-none items-center rounded-[7px] py-1.5 pl-8 pr-3',
-                  'text-sm text-ink outline-none data-[highlighted]:bg-paper data-[state=checked]:font-medium',
+                  'text-sm text-ink outline-none data-[highlighted]:bg-raised data-[state=checked]:font-medium',
                 )}
               >
                 <RadixSelect.ItemIndicator className="absolute left-2">

@@ -17,12 +17,13 @@ export const toneClasses: Record<Tone, { bg: string; text: string; dot: string }
 const statusToTone: Record<string, Tone> = {
   // green
   occupied: 'green', paid: 'green', active: 'green', inside: 'green', resolved: 'green', completed: 'green',
+  present: 'green',
   // amber
   unpaid: 'amber', pending: 'amber', open: 'amber', issued: 'amber', draft: 'amber',
   // red
-  overdue: 'red', failed: 'red', inactive: 'red',
+  overdue: 'red', failed: 'red', inactive: 'red', absent: 'red',
   // blue
-  'checked out': 'blue', in_progress: 'blue', 'in progress': 'blue',
+  'checked out': 'blue', in_progress: 'blue', 'in progress': 'blue', leave: 'blue',
   // neutral
   vacant: 'neutral', tenant: 'neutral', '—': 'neutral',
   // indigo

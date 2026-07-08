@@ -4,12 +4,11 @@
  */
 import { useMemo } from 'react';
 
-import type { Complaint, ComplaintStatus } from '@/types/api';
+import type { Complaint } from '@/types/api';
+import type { ListParams } from '@/types/http';
 
 import { complaintHooks } from './resources';
 import { useFlatsLookup, useStaffLookup } from './use-lookups';
-
-export type ComplaintFilter = 'all' | ComplaintStatus;
 
 export interface ComplaintRow {
   complaint: Complaint;
@@ -17,13 +16,9 @@ export interface ComplaintRow {
   staffName: string | null;
 }
 
-export function useComplaintRows(filter: ComplaintFilter, search: string, page?: number) {
-  const complaints = complaintHooks.useList({
-    page,
-    search: search || undefined,
-    ordering: '-created_at',
-    filters: { status: filter === 'all' ? undefined : filter },
-  });
+/** Server-filtered/paginated/sorted complaints, joined with flat number + assigned staff name. */
+export function useComplaintRows(listParams: ListParams) {
+  const complaints = complaintHooks.useList(listParams);
   const flats = useFlatsLookup();
   const staff = useStaffLookup();
 

@@ -11,7 +11,7 @@ export function billsToDocItems(bills: ElectricityBill[]): BillingDocItem[] {
     subtitle: `${shortDate(b.billing_period_start)} – ${shortDate(b.billing_period_end)}`,
     amount: b.total_payable,
     status: b.status,
-    href: `/billing/electricity/${b.id}`,
+    href: `/billing/${b.id}`,
   }));
 }
 

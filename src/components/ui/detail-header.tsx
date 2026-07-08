@@ -45,7 +45,7 @@ export function DetailHeader({
           {leading}
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="font-display text-3xl leading-tight text-ink">{title}</h1>
+              <h1 className="display text-[1.75rem] text-ink">{title}</h1>
               {status}
             </div>
             {meta != null && <div className="mt-1 text-sm text-muted">{meta}</div>}

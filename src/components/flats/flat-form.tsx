@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
 import { flatHooks } from '@/hooks/resources';
 import { useBuildingsLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
@@ -18,6 +19,7 @@ const OCCUPANCY = [
 
 /** Create/edit a flat. Pass `flat` to edit; omit to create. */
 export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) {
+  const toast = useToast();
   const buildings = useBuildingsLookup();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
@@ -31,6 +33,14 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
   const [flatType, setFlatType] = useState(flat?.flat_type ?? 'standard');
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
+
+  function resetForFlatEntry() {
+    // Keep building/type/occupancy (likely the same for the next unit); clear the
+    // per-unit fields so the user can keep entering flats quickly.
+    setFlatNumber('');
+    setOwner('');
+    setError(null);
+  }
 
   const buildingOptions = useMemo(
     () => (buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
@@ -47,8 +57,7 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
 
   const pending = create.isPending || update.isPending;
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit(closeAfter: boolean) {
     setError(null);
     const payload: FlatInput = {
       building: Number(building),
@@ -61,10 +70,17 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
     try {
       if (flat) await update.mutateAsync({ id: flat.id, payload });
       else await create.mutateAsync(payload);
-      onDone();
+      toast.success(flat ? 'Flat updated' : 'Flat added', `${flatNumber} saved.`);
+      if (closeAfter) onDone();
+      else resetForFlatEntry();
     } catch (err) {
       setError(toApiError(err).message);
     }
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void submit(true);
   }
 
   return (
@@ -102,8 +118,18 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
       </Field>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
+      <div className="flex items-center justify-end gap-2 pt-1">
         <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
+        {!flat && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={pending || !building || !flatNumber}
+            onClick={() => void submit(false)}
+          >
+            Save &amp; add another
+          </Button>
+        )}
         <Button type="submit" disabled={pending || !building || !flatNumber}>
           {flat ? 'Save changes' : 'Add flat'}
         </Button>

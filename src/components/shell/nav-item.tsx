@@ -26,7 +26,7 @@ export function NavItem({ item, collapsed }: { item: NavItemDef; collapsed: bool
         collapsed && 'justify-center px-0',
         active
           ? 'bg-primary-soft text-primary-text font-medium'
-          : 'text-ink-secondary hover:bg-paper',
+          : 'text-ink-secondary hover:bg-surface hover:text-ink',
       )}
     >
       <Icon className="h-4.5 w-4.5 shrink-0" />
