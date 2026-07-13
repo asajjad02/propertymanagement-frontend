@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === 'authenticated') router.replace('/flats');
+    if (status === 'authenticated') router.replace('/');
   }, [status, router]);
 
   return (

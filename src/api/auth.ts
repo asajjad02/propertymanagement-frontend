@@ -2,8 +2,12 @@
 import { apiClient } from '@/lib/api-client';
 import { clearTokens, getRefreshToken, setTokens } from '@/lib/token-storage';
 import type {
+  AccountDetails,
+  AccountUpdateInput,
+  ChangePasswordInput,
   LoginInput,
   MeResponse,
+  ProfileUpdateInput,
   RegisterInput,
   RegisterResponse,
   ResetPasswordInput,
@@ -40,6 +44,29 @@ export async function resendOtp(email: string): Promise<void> {
 
 export async function fetchMe(): Promise<MeResponse> {
   const { data } = await apiClient.get<MeResponse>('/auth/me/');
+  return data;
+}
+
+/** Update the logged-in user's own profile (name, phone, email). */
+export async function updateProfile(input: ProfileUpdateInput): Promise<MeResponse> {
+  const { data } = await apiClient.patch<MeResponse>('/auth/me/', input);
+  return data;
+}
+
+/** Change the logged-in user's password (requires the current one). */
+export async function changePassword(input: ChangePasswordInput): Promise<void> {
+  await apiClient.post('/auth/change-password/', input);
+}
+
+/** GET the current account's settings (society details). */
+export async function fetchAccount(): Promise<AccountDetails> {
+  const { data } = await apiClient.get<AccountDetails>('/account/');
+  return data;
+}
+
+/** PATCH the current account's settings (admin only). */
+export async function updateAccount(input: Partial<AccountUpdateInput>): Promise<AccountDetails> {
+  const { data } = await apiClient.patch<AccountDetails>('/account/', input);
   return data;
 }
 

@@ -5,6 +5,8 @@
  */
 import { apiClient } from '@/lib/api-client';
 import type {
+  BulkFlatsInput,
+  BulkFlatsResult,
   Building,
   BuildingInput,
   Complaint,
@@ -34,11 +36,22 @@ import type {
   PersonInput,
   StaffMember,
   StaffMemberInput,
+  AttendanceRecord,
+  AttendanceRecordInput,
+  SalaryPayment,
+  SalaryPaymentInput,
   Vehicle,
   VehicleInput,
   Visitor,
   VisitorInput,
+  Inspection,
+  InspectionInput,
+  SecurityDeposit,
+  SecurityDepositInput,
+  SearchResult,
 } from '@/types/api';
+import type { TeamMember, TeamMemberInput } from '@/types/team';
+import type { DashboardSummary } from '@/types/dashboard';
 
 import { createResource } from './resource';
 
@@ -51,12 +64,19 @@ export const people = createResource<Person, PersonInput>('people');
 export const owners = createResource<Owner, OwnerInput>('owners');
 export const occupants = createResource<Occupant, OccupantInput>('occupants');
 export const vehicles = createResource<Vehicle, VehicleInput>('vehicles');
+export const inspections = createResource<Inspection, InspectionInput>('inspections');
+export const securityDeposits = createResource<SecurityDeposit, SecurityDepositInput>('security-deposits');
 
 // Operations
 export const visitors = createResource<Visitor, VisitorInput>('visitors');
 
 // Staff
 export const staffMembers = createResource<StaffMember, StaffMemberInput>('staff-members');
+export const attendanceRecords = createResource<AttendanceRecord, AttendanceRecordInput>('attendance-records');
+export const salaryPayments = createResource<SalaryPayment, SalaryPaymentInput>('salary-payments');
+
+// Team (account memberships — admin only)
+export const team = createResource<TeamMember, TeamMemberInput>('team');
 
 // Complaints
 export const complaints = createResource<Complaint, ComplaintInput>('complaints');
@@ -74,6 +94,15 @@ export const payments = createResource<Payment, PaymentInput>('payments');
 // Custom viewset actions (not plain CRUD)
 // ---------------------------------------------------------------------------
 
+/** POST /flats/bulk_create/ — creates one flat per number; returns counts + skipped duplicates. */
+export async function bulkCreateFlats(payload: BulkFlatsInput): Promise<BulkFlatsResult> {
+  const { data } = await apiClient.post<BulkFlatsResult>(
+    `${flats.path}bulk_create/`,
+    payload,
+  );
+  return data;
+}
+
 /** POST /electricity-bills/{id}/enter_reading/ — records the reading and issues the bill. */
 export async function enterBillReading(id: number, payload: EnterReadingInput): Promise<ElectricityBill> {
   const { data } = await apiClient.post<ElectricityBill>(
@@ -81,6 +110,31 @@ export async function enterBillReading(id: number, payload: EnterReadingInput): 
     payload,
   );
   return data;
+}
+
+/** GET /dashboard/summary/ — operational (non-financial) overview metrics. */
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const { data } = await apiClient.get<DashboardSummary>('/dashboard/summary/');
+  return data;
+}
+
+/** GET /search/?q= — global record search across the account (role-scoped). */
+export async function globalSearch(q: string): Promise<SearchResult[]> {
+  const { data } = await apiClient.get<{ results: SearchResult[] }>('/search/', { params: { q } });
+  return data.results;
+}
+
+/** GET /electricity-bills/{id}/pdf/ — the combined bill as a PDF blob (authed). */
+export async function downloadBillPdf(id: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`${electricityBills.path}${id}/pdf/`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
+/** POST /electricity-bills/{id}/send/ — deliver the bill on a channel (email live). */
+export async function sendBill(id: number, payload: { channel: string; to?: string }): Promise<void> {
+  await apiClient.post(`${electricityBills.path}${id}/send/`, payload);
 }
 
 /** POST /electricity-bills/{id}/mark_paid/. */

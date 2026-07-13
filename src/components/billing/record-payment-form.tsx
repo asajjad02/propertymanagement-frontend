@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
+import { useToast } from '@/components/ui/toast';
 import { paymentHooks } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 
@@ -27,6 +28,7 @@ export function RecordPaymentForm({
   defaultAmount: string;
   onDone: () => void;
 }) {
+  const toast = useToast();
   const create = paymentHooks.useCreate();
   const [amount, setAmount] = useState(defaultAmount);
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -47,6 +49,7 @@ export function RecordPaymentForm({
         reference_number: reference,
         status: 'completed',
       });
+      toast.success('Payment recorded', `Rs ${amount}`);
       onDone();
     } catch (err) {
       setError(toApiError(err).message);

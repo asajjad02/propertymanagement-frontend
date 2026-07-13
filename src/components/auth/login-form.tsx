@@ -36,7 +36,7 @@ export function LoginForm() {
     setSubmitting(true);
     try {
       await login({ username, password });
-      router.replace('/flats');
+      router.replace('/');
     } catch (err) {
       const apiError = toApiError(err);
       // 403 => account exists but email is unverified.
@@ -51,8 +51,8 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
       <div>
         <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="mt-2 font-display text-3xl text-ink">Sign in to your portal</h1>
-        <p className="mt-1 text-sm text-muted">Manage flats, residents, billing and visitors.</p>
+        <h1 className="display mt-2.5 text-[1.9rem] text-ink">Sign in to your portal</h1>
+        <p className="mt-1.5 text-sm text-muted">Manage flats, residents, billing and visitors.</p>
       </div>
 
       {errors._form && <p className="text-sm text-danger">{errors._form}</p>}

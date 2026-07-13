@@ -4,12 +4,14 @@ import { LogOut } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/components/ui/toast';
 import { visitorHooks } from '@/hooks/resources';
 import { useAuth } from '@/providers/auth-provider';
 
 /** Quick "Check out" action: stamps exit_time to now. Write roles only. */
-export function CheckoutButton({ visitorId }: { visitorId: number }) {
+export function CheckoutButton({ visitorId, visitorName }: { visitorId: number; visitorName: string }) {
   const { hasRole } = useAuth();
+  const toast = useToast();
   const patch = visitorHooks.usePatch();
 
   if (!hasRole('admin', 'manager', 'security')) return null;
@@ -21,7 +23,10 @@ export function CheckoutButton({ visitorId }: { visitorId: number }) {
       disabled={patch.isPending}
       onClick={(e) => {
         e.stopPropagation();
-        patch.mutate({ id: visitorId, payload: { exit_time: new Date().toISOString() } });
+        patch.mutate(
+          { id: visitorId, payload: { exit_time: new Date().toISOString() } },
+          { onSuccess: () => toast.success('Checked out', visitorName) },
+        );
       }}
     >
       {patch.isPending ? <Spinner /> : <LogOut className="h-3.5 w-3.5" />}

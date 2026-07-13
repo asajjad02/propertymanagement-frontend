@@ -62,7 +62,7 @@ export function ForgotPasswordForm() {
     return (
       <div className="w-full max-w-sm space-y-4 text-center">
         <CheckCircle2 className="mx-auto h-10 w-10 text-ok" />
-        <h1 className="font-display text-2xl text-ink">Password reset</h1>
+        <h1 className="display text-2xl text-ink">Password reset</h1>
         <p className="text-sm text-muted">Your password has been updated. You can now sign in.</p>
         <Link href="/login" className="inline-block text-sm text-primary-text hover:underline">Back to sign in</Link>
       </div>
@@ -73,7 +73,7 @@ export function ForgotPasswordForm() {
     <div className="w-full max-w-sm space-y-5">
       <div>
         <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="mt-2 font-display text-3xl text-ink">Reset your password</h1>
+        <h1 className="mt-2.5 display text-[1.9rem] text-ink">Reset your password</h1>
         <p className="mt-1 text-sm text-muted">
           {phase === 'request'
             ? 'Enter your email and we’ll send a reset code.'

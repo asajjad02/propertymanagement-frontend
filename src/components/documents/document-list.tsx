@@ -85,12 +85,12 @@ export function DocumentList({
                 </p>
               </div>
               <button onClick={() => triggerDownload(doc)} aria-label="Download"
-                className="rounded-control p-1.5 text-muted hover:bg-paper hover:text-ink">
+                className="rounded-control p-1.5 text-muted hover:bg-raised hover:text-ink">
                 <Download className="h-4 w-4" />
               </button>
               {canWrite && (
                 <button onClick={() => setDeleting(doc)} aria-label="Delete"
-                  className="rounded-control p-1.5 text-muted hover:bg-paper hover:text-danger">
+                  className="rounded-control p-1.5 text-muted hover:bg-raised hover:text-danger">
                   <Trash2 className="h-4 w-4" />
                 </button>
               )}

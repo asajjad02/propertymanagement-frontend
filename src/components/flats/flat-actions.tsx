@@ -19,7 +19,7 @@ export function FlatActions({ flat }: { flat: Flat }) {
     <>
       {hasRole('admin', 'manager', 'accountant') && (
         <Button variant="secondary" size="sm" asChild>
-          <Link href="/billing/electricity">
+          <Link href="/billing">
             <Zap className="h-4 w-4" />
             Generate bill
           </Link>

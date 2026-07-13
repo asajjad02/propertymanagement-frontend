@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/toast';
 import { useEnterBillReading } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 
 /** Enter the current meter reading → backend calculates and issues the bill. */
 export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: () => void }) {
+  const toast = useToast();
   const enterReading = useEnterBillReading();
   const [reading, setReading] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -26,6 +28,7 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
         id: billId,
         payload: { current_reading: reading, reading_date: date, notes: notes || undefined },
       });
+      toast.success('Reading recorded', 'Bill issued.');
       onDone();
     } catch (err) {
       setError(toApiError(err).message);

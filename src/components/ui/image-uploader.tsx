@@ -72,7 +72,7 @@ export function ImageUploader({
               type="button"
               onClick={() => onChange(value.filter((_, idx) => idx !== i))}
               aria-label={`Remove ${file.name}`}
-              className="absolute right-0.5 top-0.5 rounded-pill bg-ink/70 p-0.5 text-white hover:bg-ink"
+              className="absolute right-0.5 top-0.5 rounded-pill bg-black/60 p-0.5 text-white hover:bg-black/80"
             >
               <X className="h-3 w-3" />
             </button>

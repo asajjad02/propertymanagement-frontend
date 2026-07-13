@@ -9,6 +9,7 @@ import {
   QueryClient,
   QueryClientProvider,
   isServer,
+  keepPreviousData,
 } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -16,7 +17,15 @@ function makeQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30_000,
+        // Data changes rarely relative to how often screens are revisited, so
+        // cache generously: within this window a revisit is instant (no refetch),
+        // and results stay in memory for 10 min for back/forward navigation.
+        staleTime: 60_000,
+        gcTime: 10 * 60_000,
+        // When query params change (filter, search, page, tab), keep showing the
+        // previous results until the new ones arrive instead of flashing a
+        // spinner — the single biggest perceived-latency win on list screens.
+        placeholderData: keepPreviousData,
         retry: (failureCount, error) => {
           // Don't retry auth failures; the interceptor already tried to refresh.
           const status = (error as { status?: number })?.status;
@@ -24,6 +33,7 @@ function makeQueryClient(): QueryClient {
           return failureCount < 2;
         },
         refetchOnWindowFocus: false,
+        refetchOnMount: false,
       },
     },
   });

@@ -1,13 +1,16 @@
 import {
   BarChart3,
   Building2,
+  LayoutDashboard,
   MessageSquare,
   Receipt,
+  SlidersHorizontal,
   UserCheck,
   UserCog,
+  UserPlus,
   Users,
   Wrench,
-  Zap,
+  ReceiptText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -38,20 +41,28 @@ export const navGroups: NavGroupDef[] = [
   {
     label: 'Management',
     items: [
+      { label: 'Overview', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'manager'] },
       { label: 'Flats', href: '/flats', icon: Building2, roles: WRITE_MGMT },
       { label: 'Residents', href: '/residents', icon: Users, roles: WRITE_MGMT },
       { label: 'Visitors', href: '/visitors', icon: UserCheck },
-      { label: 'Electricity Billing', href: '/billing/electricity', icon: Zap, roles: WRITE_MGMT },
+      { label: 'Monthly Bills', href: '/billing', icon: ReceiptText, roles: WRITE_MGMT },
     ],
   },
   {
     label: 'Operations',
     items: [
       { label: 'Maintenance', href: '/maintenance', icon: Wrench, roles: WRITE_MGMT, soon: true },
-      { label: 'Staff', href: '/staff', icon: UserCog, roles: ['admin', 'manager'], soon: true },
+      { label: 'Staff', href: '/staff', icon: UserCog, roles: ['admin', 'manager'] },
       { label: 'Expenses', href: '/expenses', icon: Receipt, roles: WRITE_MGMT, soon: true },
       { label: 'Complaints', href: '/complaints', icon: MessageSquare, roles: ['admin', 'manager'] },
       { label: 'Reports', href: '/reports', icon: BarChart3, roles: WRITE_MGMT, soon: true },
+    ],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { label: 'Team', href: '/team', icon: UserPlus, roles: ['admin'] },
+      { label: 'Rates', href: '/rates', icon: SlidersHorizontal, roles: ['admin'] },
     ],
   },
 ];

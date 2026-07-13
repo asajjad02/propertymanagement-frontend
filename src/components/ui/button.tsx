@@ -7,10 +7,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'icon';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-primary text-white hover:bg-primary-hover',
-  secondary: 'bg-surface border border-hairline text-ink hover:bg-paper',
-  ghost: 'text-ink-secondary hover:bg-paper',
-  danger: 'bg-danger text-white hover:brightness-95',
+  primary:
+    'bg-primary text-white shadow-hair hover:bg-primary-hover active:bg-primary-hover',
+  secondary:
+    'bg-surface border border-hairline text-ink hover:bg-raised hover:border-muted/40 active:bg-neutral-soft',
+  ghost: 'text-ink-secondary hover:bg-raised active:bg-neutral-soft',
+  danger: 'bg-danger text-white shadow-hair hover:brightness-95 active:brightness-90',
 };
 
 const sizes: Record<Size, string> = {
@@ -37,8 +39,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       // Slot forwards props to its child; only set `type` on real buttons.
       {...(asChild ? {} : { type: type ?? 'button' })}
       className={cn(
-        'inline-flex items-center rounded-control font-medium transition-colors',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+        'inline-flex items-center justify-center rounded-control font-medium tracking-[-0.01em] transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-paper',
         'disabled:opacity-50 disabled:pointer-events-none',
         variants[variant],
         sizes[size],

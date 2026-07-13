@@ -30,7 +30,7 @@ export function VerifyEmailForm({ initialEmail = '' }: { initialEmail?: string }
     setSubmitting(true);
     try {
       await verifyEmail({ email, code });
-      router.replace('/flats');
+      router.replace('/');
     } catch (err) {
       setError(toApiError(err).message);
     } finally {
@@ -55,7 +55,7 @@ export function VerifyEmailForm({ initialEmail = '' }: { initialEmail?: string }
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
       <div>
         <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="mt-2 font-display text-3xl text-ink">Verify your email</h1>
+        <h1 className="mt-2.5 display text-[1.9rem] text-ink">Verify your email</h1>
         <p className="mt-1 text-sm text-muted">Enter the 6-digit code we sent to your inbox.</p>
       </div>
 

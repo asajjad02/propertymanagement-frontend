@@ -1,57 +1,43 @@
 /**
- * Electricity bill rows + summary for the billing list. Fetches all bills once
- * (small per account), joins the flat number, and derives status counts and the
- * outstanding total. Status filter and search are applied client-side (the bill
- * viewset exposes neither a search field nor a cycle filter).
+ * Electricity bill rows for the billing list. Server-filtered/paginated/sorted
+ * bills joined client-side with their flat number and building name resolved
+ * from the reference lookups. `listParams` comes straight from `useTableQuery`.
  */
 import { useMemo } from 'react';
 
-import type { BillStatus, ElectricityBill } from '@/types/api';
+import type { ElectricityBill } from '@/types/api';
+import type { ListParams } from '@/types/http';
 
 import { electricityBillHooks } from './resources';
-import { useFlatsLookup } from './use-lookups';
-
-export type BillFilter = 'all' | BillStatus;
+import { useBuildingsLookup, useFlatsLookup } from './use-lookups';
 
 export interface BillRow {
   bill: ElectricityBill;
   flatNumber: string;
+  buildingName: string;
 }
 
-export function useBillRows(filter: BillFilter, search: string) {
-  const bills = electricityBillHooks.useAll({ ordering: '-billing_period_end' });
+/** Server-filtered/paginated/sorted bills, joined with flat number + building name. */
+export function useBillRows(listParams: ListParams) {
+  const bills = electricityBillHooks.useList(listParams);
   const flats = useFlatsLookup();
+  const buildings = useBuildingsLookup();
 
-  const allRows = useMemo<BillRow[]>(
-    () =>
-      (bills.data ?? []).map((bill) => ({
+  const rows = useMemo<BillRow[]>(() => {
+    const results = bills.data?.results ?? [];
+    return results.map((bill) => {
+      const flat = flats.map.get(bill.flat);
+      return {
         bill,
-        flatNumber: flats.map.get(bill.flat)?.flat_number ?? `#${bill.flat}`,
-      })),
-    [bills.data, flats.map],
-  );
+        flatNumber: flat?.flat_number ?? `#${bill.flat}`,
+        buildingName: flat ? buildings.map.get(flat.building)?.name ?? '—' : '—',
+      };
+    });
+  }, [bills.data, flats.map, buildings.map]);
 
-  const stats = useMemo(() => {
-    const data = bills.data ?? [];
-    const outstanding = data
-      .filter((b) => b.status !== 'paid')
-      .reduce((sum, b) => sum + (Number(b.total_payable) || 0), 0);
-    return {
-      total: data.length,
-      issued: data.filter((b) => b.status === 'issued').length,
-      paid: data.filter((b) => b.status === 'paid').length,
-      outstanding,
-    };
-  }, [bills.data]);
-
-  const rows = useMemo(() => {
-    const byStatus = filter === 'all' ? allRows : allRows.filter((r) => r.bill.status === filter);
-    const q = search.trim().toLowerCase();
-    if (!q) return byStatus;
-    return byStatus.filter(
-      (r) => r.flatNumber.toLowerCase().includes(q) || String(r.bill.id).includes(q),
-    );
-  }, [allRows, filter, search]);
-
-  return { rows, stats, isLoading: bills.isPending || flats.isPending };
+  return {
+    rows,
+    count: bills.data?.count ?? 0,
+    isLoading: bills.isPending || flats.isPending || buildings.isPending,
+  };
 }

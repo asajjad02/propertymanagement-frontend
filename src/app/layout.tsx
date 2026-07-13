@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/providers/app-providers";
-
-const hanken = Hanken_Grotesk({
-  variable: "--font-hanken",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-});
+import { InlineScript } from "@/components/util/inline-script";
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -26,6 +16,12 @@ export const metadata: Metadata = {
   description: "Apartment management system",
 };
 
+/*
+ * Set the theme before first paint to avoid a flash. Reads the persisted
+ * preference; if none, the CSS falls back to the OS `prefers-color-scheme`.
+ */
+const themeBootstrap = `(function(){try{var t=localStorage.getItem('hr.theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,8 +30,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${hanken.variable} ${instrumentSerif.variable} ${plexMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${GeistSans.variable} ${plexMono.variable} h-full antialiased`}
     >
+      <head>
+        <InlineScript html={themeBootstrap} />
+      </head>
       <body className="min-h-full flex flex-col">
         <AppProviders>{children}</AppProviders>
       </body>

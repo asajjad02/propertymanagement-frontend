@@ -26,7 +26,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         <button
           onClick={onToggle}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={cn('rounded-control p-1 text-muted hover:bg-paper hover:text-ink', collapsed && 'hidden')}
+          className={cn('rounded-control p-1 text-muted hover:bg-surface hover:text-ink', collapsed && 'hidden')}
         >
           <PanelLeftClose className="h-4 w-4" />
         </button>
@@ -36,7 +36,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         <button
           onClick={onToggle}
           aria-label="Expand sidebar"
-          className="mx-auto mb-2 rounded-control p-1 text-muted hover:bg-paper hover:text-ink"
+          className="mx-auto mb-2 rounded-control p-1 text-muted hover:bg-surface hover:text-ink"
         >
           <PanelLeftOpen className="h-4 w-4" />
         </button>

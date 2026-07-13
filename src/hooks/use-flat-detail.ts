@@ -72,10 +72,14 @@ export function useFlatDetail(flatId: number) {
       outstanding,
       isLoading: flat.isPending,
       isError: flat.isError,
+      // The bills/charges/account-summary sections have their own queries; track
+      // them separately so they show a loading state instead of a premature
+      // "No bills yet" before those requests resolve.
+      billsLoading: bills.isPending || charges.isPending,
     };
   }, [
     flat.data, flat.isPending, flat.isError, flatId,
     buildings.map, owners.map, people.map, occupants.activeByFlat,
-    vehicles.data, bills.data, charges.data,
+    vehicles.data, bills.data, bills.isPending, charges.data, charges.isPending,
   ]);
 }

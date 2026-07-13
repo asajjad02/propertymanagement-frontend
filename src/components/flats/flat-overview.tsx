@@ -1,6 +1,10 @@
 import { BillingDocList } from '@/components/billing/billing-doc-list';
 import { billsToDocItems } from '@/components/billing/to-doc-items';
+import { DepositCard } from '@/components/inspections/deposit-card';
+import { InspectionsCard } from '@/components/inspections/inspections-card';
+import { Card, CardBody } from '@/components/ui/card';
 import { InfoCard } from '@/components/ui/info-card';
+import { LoadingBlock } from '@/components/ui/spinner';
 import { VehicleList } from '@/components/vehicles/vehicle-list';
 import type { useFlatDetail } from '@/hooks/use-flat-detail';
 import { AccountSummary } from './account-summary';
@@ -11,7 +15,7 @@ type FlatDetail = ReturnType<typeof useFlatDetail>;
 
 /** Overview tab: two-column body (info + people/vehicles | summary + bills). */
 export function FlatOverview({ detail }: { detail: FlatDetail }) {
-  const { flat, building, owner, resident, residentIsOwner, activeOccupantId, vehicles, bills, charges, outstanding } = detail;
+  const { flat, building, owner, resident, residentIsOwner, activeOccupantId, vehicles, bills, charges, outstanding, billsLoading } = detail;
   if (!flat) return null;
 
   return (
@@ -34,11 +38,19 @@ export function FlatOverview({ detail }: { detail: FlatDetail }) {
           activeOccupantId={activeOccupantId}
         />
         <VehicleList vehicles={vehicles} />
+        <InspectionsCard flatId={flat.id} occupantId={activeOccupantId} />
+        <DepositCard flatId={flat.id} occupantId={activeOccupantId} />
       </div>
 
       <div className="space-y-6">
-        <AccountSummary outstanding={outstanding} billCount={bills.length} chargeCount={charges.length} />
-        <BillingDocList title="Recent bills" items={billsToDocItems(bills).slice(0, 5)} emptyLabel="No bills yet" />
+        {billsLoading ? (
+          <Card><CardBody><LoadingBlock label="Loading account…" /></CardBody></Card>
+        ) : (
+          <>
+            <AccountSummary outstanding={outstanding} billCount={bills.length} chargeCount={charges.length} />
+            <BillingDocList title="Recent bills" items={billsToDocItems(bills).slice(0, 5)} emptyLabel="No bills yet" />
+          </>
+        )}
       </div>
     </div>
   );

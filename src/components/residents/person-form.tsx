@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/toast';
 import { personHooks } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 import type { Person, PersonInput } from '@/types/api';
@@ -17,6 +18,7 @@ const EMPTY: PersonInput = {
 
 /** Create/edit a person (resident). Pass `person` to edit. */
 export function PersonForm({ person, onDone }: { person?: Person; onDone: () => void }) {
+  const toast = useToast();
   const create = personHooks.useCreate();
   const update = personHooks.useUpdate();
   const [form, setForm] = useState<PersonInput>(person ? { ...person } : EMPTY);
@@ -33,6 +35,7 @@ export function PersonForm({ person, onDone }: { person?: Person; onDone: () => 
     try {
       if (person) await update.mutateAsync({ id: person.id, payload: form });
       else await create.mutateAsync(form);
+      toast.success(person ? 'Resident updated' : 'Resident added', `${form.full_name} saved.`);
       onDone();
     } catch (err) {
       setError(toApiError(err).message);

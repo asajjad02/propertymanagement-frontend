@@ -10,10 +10,21 @@ import { timeOnly } from '@/lib/format';
 
 import { CheckoutButton } from './checkout-button';
 
-export function VisitorsTable({ rows, isLoading }: { rows: VisitorRow[]; isLoading: boolean }) {
+export function VisitorsTable({
+  rows,
+  isLoading,
+  ordering,
+  onOrderingChange,
+}: {
+  rows: VisitorRow[];
+  isLoading: boolean;
+  ordering?: string | null;
+  onOrderingChange?: (ordering: string | null) => void;
+}) {
   const columns = useMemo<ColumnDef<VisitorRow, unknown>[]>(
     () => [
       {
+        id: 'visitor',
         header: 'Visitor',
         accessorFn: (r) => r.visitor.visitor_name,
         cell: (c) => (
@@ -23,12 +34,18 @@ export function VisitorsTable({ rows, isLoading }: { rows: VisitorRow[]; isLoadi
           </div>
         ),
       },
-      { header: 'Flat', accessorFn: (r) => r.flatNumber },
-      { header: 'Host', accessorFn: (r) => r.visitor.host_name || '—' },
-      { header: 'Vehicle', accessorFn: (r) => r.vehicleReg ?? '—' },
-      { header: 'Entry', accessorFn: (r) => timeOnly(r.visitor.entry_time) },
-      { header: 'Exit', accessorFn: (r) => timeOnly(r.visitor.exit_time) },
+      { id: 'flat', header: 'Flat', accessorFn: (r) => r.flatNumber },
+      { id: 'host', header: 'Host', accessorFn: (r) => r.visitor.host_name || '—' },
+      { id: 'vehicle', header: 'Vehicle', accessorFn: (r) => r.vehicleReg ?? '—' },
       {
+        id: 'entry_time',
+        header: 'Entry',
+        accessorFn: (r) => timeOnly(r.visitor.entry_time),
+        meta: { sortable: true },
+      },
+      { id: 'exit_time', header: 'Exit', accessorFn: (r) => timeOnly(r.visitor.exit_time) },
+      {
+        id: 'status',
         header: 'Status',
         accessorFn: (r) => r.status,
         cell: (c) => <StatusBadge status={c.getValue<string>()} />,
@@ -38,7 +55,10 @@ export function VisitorsTable({ rows, isLoading }: { rows: VisitorRow[]; isLoadi
         header: '',
         cell: (c) =>
           c.row.original.status === 'inside' ? (
-            <CheckoutButton visitorId={c.row.original.visitor.id} />
+            <CheckoutButton
+              visitorId={c.row.original.visitor.id}
+              visitorName={c.row.original.visitor.visitor_name}
+            />
           ) : null,
         meta: { align: 'right' },
       },
@@ -51,8 +71,11 @@ export function VisitorsTable({ rows, isLoading }: { rows: VisitorRow[]; isLoadi
       columns={columns}
       data={rows}
       isLoading={isLoading}
-      emptyTitle="No visitors for this day"
-      emptyDescription="Log a visitor or pick a different date."
+      ordering={ordering}
+      onOrderingChange={onOrderingChange}
+      ariaLabel="Visitors"
+      emptyTitle="No visitors found"
+      emptyDescription="Try adjusting your filters, or log a visitor."
     />
   );
 }

@@ -42,7 +42,7 @@ export function ResidentVehicles({ personId, vehicles }: { personId: number; veh
         rowAction={(v) => (
           <DropdownMenu
             trigger={
-              <button aria-label="Vehicle actions" className="rounded-control p-1 text-muted hover:bg-paper hover:text-ink">
+              <button aria-label="Vehicle actions" className="rounded-control p-1 text-muted hover:bg-raised hover:text-ink">
                 <MoreHorizontal className="h-4 w-4" />
               </button>
             }

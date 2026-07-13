@@ -27,7 +27,7 @@ export function DropdownMenu({ trigger, items, align = 'end' }: DropdownMenuProp
         <Dropdown.Content
           align={align}
           sideOffset={4}
-          className="z-50 min-w-[10rem] rounded-control border border-hairline bg-surface p-1 shadow-lg"
+          className="z-50 min-w-[10rem] rounded-control border border-hairline bg-surface p-1 shadow-pop"
         >
           {items.map((item, i) => (
             <Dropdown.Item
@@ -36,7 +36,7 @@ export function DropdownMenu({ trigger, items, align = 'end' }: DropdownMenuProp
               onSelect={item.onSelect}
               className={cn(
                 'flex cursor-pointer items-center gap-2 rounded-[7px] px-2.5 py-1.5 text-sm outline-none',
-                'data-[highlighted]:bg-paper data-[disabled]:opacity-50 data-[disabled]:cursor-default',
+                'data-[highlighted]:bg-raised data-[disabled]:opacity-50 data-[disabled]:cursor-default',
                 item.danger ? 'text-danger' : 'text-ink',
               )}
             >

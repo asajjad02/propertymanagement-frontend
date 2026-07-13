@@ -5,21 +5,27 @@ import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 
 const LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
   flats: 'Flats',
   residents: 'Residents',
   visitors: 'Visitors',
-  billing: 'Billing',
-  electricity: 'Electricity',
+  billing: 'Monthly Bills',
+  'meter-round': 'Meter round',
   maintenance: 'Maintenance',
   staff: 'Staff',
   expenses: 'Expenses',
   complaints: 'Complaints',
   reports: 'Reports',
+  team: 'Team',
+  rates: 'Rates',
+  settings: 'Settings',
 };
 
 function labelFor(segment: string): string {
   if (/^\d+$/.test(segment)) return `#${segment}`;
-  return LABELS[segment] ?? segment;
+  if (LABELS[segment]) return LABELS[segment];
+  // Humanize any unmapped segment so it never shows raw-lowercase.
+  return segment.replace(/[-_]/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }
 
 /** Breadcrumb derived from the current path. Numeric ids render as "#id". */

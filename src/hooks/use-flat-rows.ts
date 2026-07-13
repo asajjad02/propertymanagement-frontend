@@ -4,7 +4,8 @@
  */
 import { useMemo } from 'react';
 
-import type { Flat, OccupancyStatus } from '@/types/api';
+import type { Flat } from '@/types/api';
+import type { ListParams } from '@/types/http';
 
 import { flatHooks } from './resources';
 import {
@@ -21,23 +22,9 @@ export interface FlatRow {
   tenantName: string | null;
 }
 
-export interface FlatRowsParams {
-  occupancy?: OccupancyStatus;
-  buildingId?: number;
-  search?: string;
-  page?: number;
-}
-
-export function useFlatRows(params: FlatRowsParams) {
-  const flats = flatHooks.useList({
-    page: params.page,
-    search: params.search || undefined,
-    ordering: 'flat_number',
-    filters: {
-      occupancy_status: params.occupancy,
-      building: params.buildingId,
-    },
-  });
+/** Server-filtered/paginated/sorted flats, joined with owner/tenant/building names. */
+export function useFlatRows(listParams: ListParams) {
+  const flats = flatHooks.useList(listParams);
   const buildings = useBuildingsLookup();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
