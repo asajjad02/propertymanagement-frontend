@@ -156,10 +156,24 @@ export interface Building {
 
 export type BuildingInput = Omit<Building, 'id' | 'created_at' | 'updated_at'>;
 
+export interface ApartmentType {
+  id: number;
+  name: string;
+  maintenance_charge: string;
+  status: BuildingStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ApartmentTypeInput = Omit<ApartmentType, 'id' | 'created_at' | 'updated_at'>;
+
 export interface Flat {
   id: number;
   building: number;
   owner: number | null;
+  apartment_type: number | null;
+  /** Read-only: the apartment type's name, resolved server-side. */
+  apartment_type_name?: string;
   flat_number: string;
   floor_number: number;
   flat_type: string;
@@ -168,12 +182,20 @@ export interface Flat {
   updated_at: string;
 }
 
-export type FlatInput = Omit<Flat, 'id' | 'created_at' | 'updated_at'>;
+// building is optional: multi-building is off, so the API defaults it to the
+// account's single building when omitted. apartment_type_name is read-only.
+export type FlatInput = Omit<
+  Flat,
+  'id' | 'created_at' | 'updated_at' | 'building' | 'apartment_type_name'
+> & {
+  building?: number;
+};
 
 /** Payload for POST /api/flats/bulk_create/ — one flat per number in `flat_numbers`. */
 export interface BulkFlatsInput {
-  building: number;
-  flat_type: string;
+  building?: number;
+  apartment_type?: number | null;
+  flat_type?: string;
   floor_number?: number;
   occupancy_status?: OccupancyStatus;
   flat_numbers: string[];
@@ -331,7 +353,10 @@ export interface ElectricityRate {
   created_at: string;
 }
 
-export type ElectricityRateInput = Omit<ElectricityRate, 'id' | 'created_at'>;
+// building optional: defaults to the account's single building (multi-building off).
+export type ElectricityRateInput = Omit<ElectricityRate, 'id' | 'created_at' | 'building'> & {
+  building?: number;
+};
 
 export interface MaintenanceRate {
   id: number;
@@ -341,7 +366,9 @@ export interface MaintenanceRate {
   created_at: string;
 }
 
-export type MaintenanceRateInput = Omit<MaintenanceRate, 'id' | 'created_at'>;
+export type MaintenanceRateInput = Omit<MaintenanceRate, 'id' | 'created_at' | 'building'> & {
+  building?: number;
+};
 
 export interface ElectricityBill {
   id: number;

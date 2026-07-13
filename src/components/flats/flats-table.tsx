@@ -34,8 +34,7 @@ export function FlatsTable({
       {
         id: 'flat_type',
         header: 'Type',
-        accessorFn: (r) => r.flat.flat_type,
-        cell: (c) => <span className="capitalize">{c.getValue<string>()}</span>,
+        accessorFn: (r) => r.flat.apartment_type_name || r.flat.flat_type || '—',
         meta: { sortable: true },
       },
       { id: 'owner', header: 'Owner', accessorFn: (r) => r.ownerName ?? '—' },

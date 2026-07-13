@@ -2,42 +2,25 @@
 
 import { Camera, Check, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { uploadDocument } from '@/api/documents';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { LoadingBlock } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { electricityBillHooks, useEnterBillReading } from '@/hooks/resources';
-import { useBuildingsLookup, useFlatsLookup } from '@/hooks/use-lookups';
+import { useFlatsLookup } from '@/hooks/use-lookups';
 import { numeric } from '@/lib/format';
 import type { ElectricityBill } from '@/types/api';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
 export default function MeterRoundPage() {
-  const buildings = useBuildingsLookup();
   const flats = useFlatsLookup();
-  const [building, setBuilding] = useState('');
-
-  useEffect(() => {
-    if (!building && buildings.data?.length) setBuilding(String(buildings.data[0].id));
-  }, [building, buildings.data]);
-
-  const buildingId = building ? Number(building) : undefined;
-  const drafts = electricityBillHooks.useAll(
-    { filters: { building: buildingId, status: 'draft' } },
-    { enabled: buildingId != null },
-  );
-
-  const buildingOptions = useMemo(
-    () => (buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    [buildings.data],
-  );
+  const drafts = electricityBillHooks.useAll({ filters: { status: 'draft' } });
 
   const bills = drafts.data ?? [];
 
@@ -49,20 +32,18 @@ export default function MeterRoundPage() {
         </Link>
         <h1 className="display mt-2.5 text-[1.75rem] text-ink">Meter round</h1>
         <p className="mt-1.5 text-sm text-muted">
-          Walk the building, snap each meter, and enter its reading. Each reading issues that flat's
+          Walk the property, snap each meter, and enter its reading. Each reading issues that flat's
           combined monthly bill.
         </p>
       </div>
 
-      <Select value={building || undefined} onValueChange={setBuilding} options={buildingOptions} placeholder="Select building" className="w-full" />
-
-      {drafts.isPending && buildingId != null ? (
+      {drafts.isPending ? (
         <Card><LoadingBlock label="Loading meters…" /></Card>
       ) : bills.length === 0 ? (
         <Card>
           <EmptyState
             title="No pending readings"
-            description="Every draft bill in this building has been read. Create bills from Monthly Bills to start a new cycle."
+            description="Every draft bill has been read. Create bills from Monthly Bills to start a new cycle."
           />
         </Card>
       ) : (

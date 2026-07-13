@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 
 import type { Person } from '@/types/api';
 import type { ListParams } from '@/types/http';
+import { deriveResidentRole, type ResidentRole } from '@/lib/resident-role';
 
 import { personHooks } from './resources';
 import {
@@ -21,6 +22,7 @@ export type ResidentType = 'owner' | 'tenant';
 export interface ResidentRow {
   person: Person;
   types: ResidentType[];
+  role: ResidentRole | null;
   flatNumber: string | null;
 }
 
@@ -38,15 +40,24 @@ export function useResidentRows(listParams: ListParams) {
         .filter((o) => o.status === 'active')
         .map((o) => [o.person, o]),
     );
+    const ownerPersonIdOfFlat = (flatId: number): number | null => {
+      const ownerId = flats.map.get(flatId)?.owner;
+      return ownerId != null ? owners.map.get(ownerId)?.person ?? null : null;
+    };
     return results.map((person) => {
       const types: ResidentType[] = [];
       if (owners.byPerson.has(person.id)) types.push('owner');
       if (occupants.byPerson.has(person.id)) types.push('tenant');
       const occ = activeOccByPerson.get(person.id);
       const flatNumber = occ ? flats.map.get(occ.flat)?.flat_number ?? null : null;
-      return { person, types, flatNumber };
+      const role = deriveResidentRole(person.id, {
+        isOwner: owners.byPerson.has(person.id),
+        occupiedFlatId: occ?.flat ?? null,
+        ownerPersonIdOfFlat,
+      });
+      return { person, types, role, flatNumber };
     });
-  }, [people.data, owners.byPerson, occupants.data, occupants.byPerson, flats.map]);
+  }, [people.data, owners.byPerson, owners.map, occupants.data, occupants.byPerson, flats.map]);
 
   return {
     rows,

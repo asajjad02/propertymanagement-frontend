@@ -36,7 +36,10 @@ export default function RootLayout({
       <head>
         <InlineScript html={themeBootstrap} />
       </head>
-      <body className="min-h-full flex flex-col">
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
+          attributes onto <body> after SSR, which would otherwise trip a
+          hydration mismatch. */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

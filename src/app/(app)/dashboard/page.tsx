@@ -15,9 +15,8 @@ import type { DashboardSummary } from '@/types/dashboard';
 
 type SetupKey = keyof DashboardSummary['setup'];
 const SETUP_STEPS: { key: SetupKey; label: string; href: string; cta: string }[] = [
-  { key: 'has_building', label: 'Add your building', href: '/flats', cta: 'Buildings' },
   { key: 'has_flats', label: 'Add flats', href: '/flats', cta: 'Flats' },
-  { key: 'has_rates', label: 'Set electricity & maintenance rates', href: '/rates', cta: 'Rates' },
+  { key: 'has_rates', label: 'Set electricity rate & apartment types', href: '/configuration', cta: 'Configure' },
   { key: 'has_team', label: 'Invite your team', href: '/team', cta: 'Team' },
 ];
 
@@ -42,7 +41,7 @@ export default function DashboardPage() {
         <>
           <StatCardRow>
             <StatCard label="Occupancy" value={`${data?.flats.occupancy_rate ?? 0}%`} tone="green" sub={`${data?.flats.occupied ?? 0} of ${data?.flats.total ?? 0} flats`} />
-            <StatCard label="Vacant flats" value={data?.flats.vacant ?? 0} tone="neutral" sub={`${data?.buildings ?? 0} buildings`} />
+            <StatCard label="Vacant flats" value={data?.flats.vacant ?? 0} tone="neutral" sub="available to let" />
             <StatCard label="Open complaints" value={openWork} tone={openWork > 0 ? 'amber' : 'green'} sub={`${data?.complaints.open ?? 0} open · ${data?.complaints.in_progress ?? 0} in progress`} />
             <StatCard label="On-site now" value={data?.visitors_inside ?? 0} tone="blue" sub="visitors inside" />
           </StatCardRow>
@@ -78,7 +77,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <QuickLink href="/flats" title="Flats" desc="Units & occupancy" />
             <QuickLink href="/residents" title="Residents" desc="Owners & tenants" />
-            <QuickLink href="/complaints" title="Complaints" desc={`${openWork} need attention`} />
+            <QuickLink href="/owners" title="Owners" desc="Flat owners" />
           </div>
         </>
       )}

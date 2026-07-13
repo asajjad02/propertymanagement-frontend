@@ -6,9 +6,10 @@
  */
 import { useMemo } from 'react';
 
-import type { Building, Flat, Occupant, Owner, Person, StaffMember } from '@/types/api';
+import type { ApartmentType, Building, Flat, Occupant, Owner, Person, StaffMember } from '@/types/api';
 
 import {
+  apartmentTypeHooks,
   buildingHooks,
   flatHooks,
   occupantHooks,
@@ -36,6 +37,12 @@ export function useBuildingsLookup() {
 export function useFlatsLookup() {
   const query = flatHooks.useAll();
   const map = useMemo<Map<number, Flat>>(() => byId(query.data), [query.data]);
+  return { ...query, map };
+}
+
+export function useApartmentTypesLookup() {
+  const query = apartmentTypeHooks.useAll();
+  const map = useMemo<Map<number, ApartmentType>>(() => byId(query.data), [query.data]);
   return { ...query, map };
 }
 

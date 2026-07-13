@@ -20,7 +20,7 @@ export function FlatFormDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={flat ? 'Edit flat' : 'Add flat'}
-      description={flat ? 'Update this unit’s details.' : 'Create a new unit in a building.'}
+      description={flat ? 'Update this unit’s details.' : 'Create a new unit in your property.'}
     >
       <FlatForm flat={flat} onDone={() => onOpenChange(false)} />
     </Modal>

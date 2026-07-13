@@ -1,18 +1,16 @@
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { money, numeric, shortDate } from '@/lib/format';
-import type { Building, ElectricityBill, Flat } from '@/types/api';
+import type { ElectricityBill, Flat } from '@/types/api';
 
 /** The printable combined monthly bill: electricity (metered) + fixed maintenance + outstanding. */
 export function Invoice({
   bill,
   flat,
-  building,
   meterNumber,
 }: {
   bill: ElectricityBill;
   flat: Flat | null;
-  building: Building | null;
   meterNumber: string | null;
 }) {
   const hasReading = bill.current_reading != null && bill.status !== 'draft';
@@ -27,7 +25,7 @@ export function Invoice({
             <span className="font-medium text-ink">Hash Residency</span>
           </div>
           <p className="mt-2 text-sm text-muted">
-            {building?.name ?? 'Building'} · Flat {flat?.flat_number ?? '—'} · Meter {meterNumber ?? '—'}
+            Flat {flat?.flat_number ?? '—'} · Meter {meterNumber ?? '—'}
           </p>
         </div>
         <div className="text-right">
