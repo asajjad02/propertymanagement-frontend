@@ -22,11 +22,15 @@ export async function login(input: LoginInput): Promise<TokenPair> {
 }
 
 /**
- * Register a user + their account. Returns no tokens — the backend emails a
- * verification code; the user must verify (below) to sign in.
+ * Register a user + their account. When email verification is disabled the
+ * backend returns a token pair here, which we persist so the user is signed
+ * straight in; otherwise no tokens come back and the user must verify (below).
  */
 export async function register(input: RegisterInput): Promise<RegisterResponse> {
   const { data } = await apiClient.post<RegisterResponse>('/auth/register/', input);
+  if (data.access && data.refresh) {
+    setTokens({ access: data.access, refresh: data.refresh });
+  }
   return data;
 }
 

@@ -50,13 +50,17 @@ export interface TokenPair {
 }
 
 /**
- * POST /api/auth/register/ response. Registration no longer returns tokens —
- * the user must verify their email (verify-email) to receive them.
+ * POST /api/auth/register/ response. When email verification is enabled the
+ * backend omits the tokens and returns a `detail` message (the user must then
+ * verify their email); when it's disabled the backend returns a full token
+ * pair and the user is signed straight in.
  */
 export interface RegisterResponse {
   user: User;
   account: Pick<Account, 'id' | 'name'>;
-  detail: string;
+  detail?: string;
+  access?: string;
+  refresh?: string;
 }
 
 /** GET /api/search/?q= — global record search result. */

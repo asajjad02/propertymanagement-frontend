@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
+import { EMAIL_VERIFICATION_ENABLED } from '@/lib/config';
 import { toApiError } from '@/lib/errors';
 import {
   passwordSatisfiesAll,
@@ -21,7 +22,11 @@ import { useAuth } from '@/providers/auth-provider';
 
 import { PasswordChecklist } from './password-checklist';
 
-/** Create an account, then head to email verification (no tokens issued here). */
+/**
+ * Create an account. When email verification is enabled we hand off to the
+ * verify-email step; otherwise signup returns tokens and the user drops
+ * straight into the app.
+ */
 export function RegisterForm() {
   const { register } = useAuth();
   const router = useRouter();
@@ -49,7 +54,11 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       await register(form);
-      router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      if (EMAIL_VERIFICATION_ENABLED) {
+        router.push(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      } else {
+        router.replace('/');
+      }
     } catch (err) {
       setErrors(serverFieldErrors(toApiError(err)));
     } finally {

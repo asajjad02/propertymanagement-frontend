@@ -36,7 +36,10 @@ interface AuthContextValue {
   role: Role | null;
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
-  /** Registers a user; does NOT sign in (email verification is required next). */
+  /**
+   * Registers a user. Signs in immediately when the backend returns tokens
+   * (email verification disabled); otherwise verification is required next.
+   */
   register: (input: RegisterInput) => Promise<RegisterResponse>;
   /** Verifies the email OTP; on success the session is established. */
   verifyEmail: (input: VerifyEmailInput) => Promise<void>;
@@ -67,8 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [queryClient],
   );
 
-  // Registration only creates the account; tokens come after email verification.
-  const register = useCallback((input: RegisterInput) => authApi.register(input), []);
+  const register = useCallback(
+    async (input: RegisterInput) => {
+      const res = await authApi.register(input);
+      // If the backend returned tokens, the session is now live — refresh `me`.
+      if (res.access && res.refresh) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+      }
+      return res;
+    },
+    [queryClient],
+  );
 
   const verifyEmail = useCallback(
     async (input: VerifyEmailInput) => {
