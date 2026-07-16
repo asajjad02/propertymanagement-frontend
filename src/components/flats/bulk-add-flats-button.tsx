@@ -12,18 +12,12 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useBuildingsLookup } from '@/hooks/use-lookups';
+import { DEFAULT_FLAT_TYPE, FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
 import { queryKeys } from '@/lib/query-keys';
 import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
 import type { OccupancyStatus } from '@/types/api';
 
-const TYPE_OPTIONS = [
-  { value: 'studio', label: 'Studio' },
-  { value: '1-bed', label: '1-Bed' },
-  { value: '2-bed', label: '2-Bed' },
-  { value: '3-bed', label: '3-Bed' },
-  { value: 'penthouse', label: 'Penthouse' },
-];
 const OCCUPANCY = [
   { value: 'vacant', label: 'Vacant' },
   { value: 'occupied', label: 'Occupied' },
@@ -38,7 +32,7 @@ export function BulkAddFlatsButton() {
 
   const [open, setOpen] = useState(false);
   const [building, setBuilding] = useState('');
-  const [flatType, setFlatType] = useState('2-bed');
+  const [flatType, setFlatType] = useState(DEFAULT_FLAT_TYPE);
   const [occupancy, setOccupancy] = useState<OccupancyStatus>('vacant');
   const [numbersText, setNumbersText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +89,7 @@ export function BulkAddFlatsButton() {
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Type">
-              {(id) => <Select id={id} value={flatType} onValueChange={setFlatType} options={TYPE_OPTIONS} className="w-full" />}
+              {(id) => <Select id={id} value={flatType} onValueChange={setFlatType} options={FLAT_TYPE_OPTIONS} className="w-full" />}
             </Field>
             <Field label="Occupancy">
               {(id) => <Select id={id} value={occupancy} onValueChange={(v) => setOccupancy(v as OccupancyStatus)} options={OCCUPANCY} className="w-full" />}

@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { AddFlatButton } from '@/components/flats/add-flat-button';
-import { BulkAddFlatsButton } from '@/components/flats/bulk-add-flats-button';
 import { FlatsTable } from '@/components/flats/flats-table';
 import { Card } from '@/components/ui/card';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -19,6 +18,7 @@ import { useFlatRows } from '@/hooks/use-flat-rows';
 import { useFlatStats } from '@/hooks/use-flat-stats';
 import { useBuildingsLookup } from '@/hooks/use-lookups';
 import { useTableQuery } from '@/hooks/use-table-query';
+import { FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
 
 const OCCUPANCY_TABS = [
   { value: 'all', label: 'All' },
@@ -26,14 +26,7 @@ const OCCUPANCY_TABS = [
   { value: 'vacant', label: 'Vacant' },
 ];
 
-const TYPE_OPTIONS = [
-  { value: 'all', label: 'All types' },
-  { value: 'studio', label: 'Studio' },
-  { value: '1-bed', label: '1-Bed' },
-  { value: '2-bed', label: '2-Bed' },
-  { value: '3-bed', label: '3-Bed' },
-  { value: 'penthouse', label: 'Penthouse' },
-];
+const TYPE_OPTIONS = [{ value: 'all', label: 'All types' }, ...FLAT_TYPE_OPTIONS];
 
 const PAGE_SIZE = 20;
 
@@ -78,12 +71,7 @@ export default function FlatsListPage() {
       <PageHeader
         title="Flats"
         subtitle="Units across all buildings in your account."
-        actions={
-          <>
-            <BulkAddFlatsButton />
-            <AddFlatButton />
-          </>
-        }
+        actions={<AddFlatButton />}
       />
 
       <StatCardRow>

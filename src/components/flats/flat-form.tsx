@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/toast';
 import { flatHooks } from '@/hooks/resources';
 import { useBuildingsLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
+import { DEFAULT_FLAT_TYPE, FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
 import type { Flat, FlatInput } from '@/types/api';
 
 const OCCUPANCY = [
@@ -30,7 +31,7 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
   const [owner, setOwner] = useState(flat?.owner ? String(flat.owner) : '');
   const [flatNumber, setFlatNumber] = useState(flat?.flat_number ?? '');
   const [floor, setFloor] = useState(String(flat?.floor_number ?? 1));
-  const [flatType, setFlatType] = useState(flat?.flat_type ?? 'standard');
+  const [flatType, setFlatType] = useState(flat?.flat_type ?? DEFAULT_FLAT_TYPE);
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +47,15 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
     () => (buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
     [buildings.data],
   );
+  // Keep an out-of-list existing type (e.g. a legacy "standard") selectable so
+  // editing a flat never silently drops its type.
+  const typeOptions = useMemo(() => {
+    if (flat?.flat_type && !FLAT_TYPE_OPTIONS.some((o) => o.value === flat.flat_type)) {
+      return [...FLAT_TYPE_OPTIONS, { value: flat.flat_type, label: flat.flat_type }];
+    }
+    return FLAT_TYPE_OPTIONS;
+  }, [flat?.flat_type]);
+
   const ownerOptions = useMemo(
     () =>
       (owners.data ?? []).map((o) => ({
@@ -101,7 +111,10 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Type">
-          {(id) => <Input id={id} value={flatType} onChange={(e) => setFlatType(e.target.value)} />}
+          {(id) => (
+            <Select id={id} value={flatType} onValueChange={setFlatType}
+              options={typeOptions} className="w-full" />
+          )}
         </Field>
         <Field label="Occupancy">
           {(id) => (
