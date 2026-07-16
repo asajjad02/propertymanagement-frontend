@@ -12,9 +12,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
 import { Segmented } from '@/components/ui/segmented';
-import { Select } from '@/components/ui/select';
 import { StatCard, StatCardRow } from '@/components/ui/stat-card';
-import { useBuildingsLookup } from '@/hooks/use-lookups';
 import { useResidentRows } from '@/hooks/use-resident-rows';
 import { useResidentStats } from '@/hooks/use-resident-stats';
 import { useTableQuery } from '@/hooks/use-table-query';
@@ -31,33 +29,20 @@ export default function ResidentsListPage() {
   const router = useRouter();
   const q = useTableQuery({
     key: 'residents',
-    filterKeys: ['type', 'building'],
+    filterKeys: ['type'],
     defaultOrdering: 'full_name',
   });
 
   const stats = useResidentStats();
-  const buildings = useBuildingsLookup();
   const { rows, count, isLoading } = useResidentRows(q.listParams);
-
-  const buildingOptions = useMemo(
-    () => [
-      { value: 'all', label: 'All buildings' },
-      ...(buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    ],
-    [buildings.data],
-  );
 
   const chips = useMemo<FilterChip[]>(() => {
     const list: FilterChip[] = [];
-    if (q.filters.building) {
-      const name = buildings.map.get(Number(q.filters.building))?.name ?? q.filters.building;
-      list.push({ id: 'building', label: `Building: ${name}`, onRemove: () => q.setFilter('building', undefined) });
-    }
     if (q.search) {
       list.push({ id: 'search', label: `Search: “${q.search}”`, onRemove: () => q.setSearch('') });
     }
     return list;
-  }, [q, buildings.map]);
+  }, [q]);
 
   return (
     <div className="space-y-6">
@@ -85,18 +70,11 @@ export default function ResidentsListPage() {
               />
             }
             right={
-              <>
-                <Select
-                  value={q.filters.building ?? 'all'}
-                  onValueChange={(v) => q.setFilter('building', v === 'all' ? undefined : v)}
-                  options={buildingOptions}
-                />
-                <SearchInput
-                  value={q.search}
-                  onChange={q.setSearch}
-                  placeholder="Search name, CNIC, phone…"
-                />
-              </>
+              <SearchInput
+                value={q.search}
+                onChange={q.setSearch}
+                placeholder="Search name, CNIC, phone…"
+              />
             }
           />
           <FilterChips chips={chips} onClearAll={q.clearFilters} />

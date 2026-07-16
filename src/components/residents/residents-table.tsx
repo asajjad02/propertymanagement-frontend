@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 
 import { Avatar } from '@/components/ui/avatar';
 import { DataTable } from '@/components/ui/data-table';
-import { TypeTag } from '@/components/ui/type-tag';
+import { RoleBadge } from '@/components/ui/role-badge';
 import type { ResidentRow } from '@/hooks/use-resident-rows';
 
 export function ResidentsTable({
@@ -37,17 +37,10 @@ export function ResidentsTable({
         meta: { sortable: true, sortField: 'full_name' },
       },
       {
-        header: 'Type',
-        accessorFn: (r) => r.types.join(','),
-        cell: (c) => (
-          <div className="flex gap-1">
-            {c.row.original.types.length === 0 ? (
-              <span className="text-muted">—</span>
-            ) : (
-              c.row.original.types.map((t) => <TypeTag key={t} type={t} />)
-            )}
-          </div>
-        ),
+        id: 'role',
+        header: 'Role',
+        accessorFn: (r) => r.role ?? '',
+        cell: (c) => <RoleBadge role={c.row.original.role} />,
       },
       { header: 'Flat', accessorFn: (r) => r.flatNumber ?? '—' },
       { header: 'Contact', accessorFn: (r) => r.person.phone || '—' },

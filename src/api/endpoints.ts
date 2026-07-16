@@ -5,6 +5,8 @@
  */
 import { apiClient } from '@/lib/api-client';
 import type {
+  ApartmentType,
+  ApartmentTypeInput,
   BulkFlatsInput,
   BulkFlatsResult,
   Building,
@@ -58,6 +60,7 @@ import { createResource } from './resource';
 // Properties
 export const buildings = createResource<Building, BuildingInput>('buildings');
 export const flats = createResource<Flat, FlatInput>('flats');
+export const apartmentTypes = createResource<ApartmentType, ApartmentTypeInput>('apartment-types');
 
 // Residents
 export const people = createResource<Person, PersonInput>('people');

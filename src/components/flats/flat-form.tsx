@@ -1,16 +1,17 @@
 'use client';
 
+import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { QuickAddOwnerDialog } from '@/components/owners/quick-add-owner-dialog';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
 import { flatHooks } from '@/hooks/resources';
-import { useBuildingsLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
+import { useApartmentTypesLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
-import { DEFAULT_FLAT_TYPE, FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
 import type { Flat, FlatInput } from '@/types/api';
 
 const OCCUPANCY = [
@@ -21,40 +22,27 @@ const OCCUPANCY = [
 /** Create/edit a flat. Pass `flat` to edit; omit to create. */
 export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) {
   const toast = useToast();
-  const buildings = useBuildingsLookup();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
+  const apartmentTypes = useApartmentTypesLookup();
   const create = flatHooks.useCreate();
   const update = flatHooks.useUpdate();
 
-  const [building, setBuilding] = useState(flat ? String(flat.building) : '');
   const [owner, setOwner] = useState(flat?.owner ? String(flat.owner) : '');
+  const [apartmentType, setApartmentType] = useState(flat?.apartment_type ? String(flat.apartment_type) : '');
   const [flatNumber, setFlatNumber] = useState(flat?.flat_number ?? '');
   const [floor, setFloor] = useState(String(flat?.floor_number ?? 1));
-  const [flatType, setFlatType] = useState(flat?.flat_type ?? DEFAULT_FLAT_TYPE);
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
+  const [addingOwner, setAddingOwner] = useState(false);
 
   function resetForFlatEntry() {
-    // Keep building/type/occupancy (likely the same for the next unit); clear the
+    // Keep type/occupancy (likely the same for the next unit); clear the
     // per-unit fields so the user can keep entering flats quickly.
     setFlatNumber('');
     setOwner('');
     setError(null);
   }
-
-  const buildingOptions = useMemo(
-    () => (buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    [buildings.data],
-  );
-  // Keep an out-of-list existing type (e.g. a legacy "standard") selectable so
-  // editing a flat never silently drops its type.
-  const typeOptions = useMemo(() => {
-    if (flat?.flat_type && !FLAT_TYPE_OPTIONS.some((o) => o.value === flat.flat_type)) {
-      return [...FLAT_TYPE_OPTIONS, { value: flat.flat_type, label: flat.flat_type }];
-    }
-    return FLAT_TYPE_OPTIONS;
-  }, [flat?.flat_type]);
 
   const ownerOptions = useMemo(
     () =>
@@ -65,16 +53,26 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
     [owners.data, people.map],
   );
 
+  const typeOptions = useMemo(
+    () =>
+      (apartmentTypes.data ?? [])
+        .filter((t) => t.status === 'active')
+        .map((t) => ({ value: String(t.id), label: t.name })),
+    [apartmentTypes.data],
+  );
+
   const pending = create.isPending || update.isPending;
 
   async function submit(closeAfter: boolean) {
     setError(null);
+    const typeName = apartmentType ? apartmentTypes.map.get(Number(apartmentType))?.name : undefined;
     const payload: FlatInput = {
-      building: Number(building),
       owner: owner ? Number(owner) : null,
+      apartment_type: apartmentType ? Number(apartmentType) : null,
       flat_number: flatNumber,
       floor_number: Number(floor),
-      flat_type: flatType,
+      // Keep the legacy flat_type label in sync with the chosen type.
+      flat_type: typeName ?? flat?.flat_type ?? 'standard',
       occupancy_status: occupancy as FlatInput['occupancy_status'],
     };
     try {
@@ -95,12 +93,6 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Building" required>
-        {(id) => (
-          <Select id={id} value={building || undefined} onValueChange={setBuilding}
-            options={buildingOptions} placeholder="Select building" className="w-full" />
-        )}
-      </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Flat number" required>
           {(id) => <Input id={id} value={flatNumber} onChange={(e) => setFlatNumber(e.target.value)} required />}
@@ -110,10 +102,16 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Type">
+        <Field label="Apartment type" hint={typeOptions.length === 0 ? 'Add types in Configuration' : undefined}>
           {(id) => (
-            <Select id={id} value={flatType} onValueChange={setFlatType}
-              options={typeOptions} className="w-full" />
+            <Select
+              id={id}
+              value={apartmentType || undefined}
+              onValueChange={setApartmentType}
+              options={typeOptions}
+              placeholder="Select type"
+              className="w-full"
+            />
           )}
         </Field>
         <Field label="Occupancy">
@@ -125,8 +123,14 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
       </div>
       <Field label="Owner" hint="Optional">
         {(id) => (
-          <Select id={id} value={owner || undefined} onValueChange={setOwner}
-            options={ownerOptions} placeholder="No owner" className="w-full" />
+          <div className="flex items-center gap-2">
+            <Select id={id} value={owner || undefined} onValueChange={setOwner}
+              options={ownerOptions} placeholder="No owner" className="w-full flex-1" />
+            <Button type="button" variant="secondary" onClick={() => setAddingOwner(true)}>
+              <Plus className="h-4 w-4" />
+              New
+            </Button>
+          </div>
         )}
       </Field>
 
@@ -137,16 +141,22 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
           <Button
             type="button"
             variant="secondary"
-            disabled={pending || !building || !flatNumber}
+            disabled={pending || !flatNumber}
             onClick={() => void submit(false)}
           >
             Save &amp; add another
           </Button>
         )}
-        <Button type="submit" disabled={pending || !building || !flatNumber}>
+        <Button type="submit" disabled={pending || !flatNumber}>
           {flat ? 'Save changes' : 'Add flat'}
         </Button>
       </div>
+
+      <QuickAddOwnerDialog
+        open={addingOwner}
+        onOpenChange={setAddingOwner}
+        onCreated={(ownerId) => setOwner(String(ownerId))}
+      />
     </form>
   );
 }

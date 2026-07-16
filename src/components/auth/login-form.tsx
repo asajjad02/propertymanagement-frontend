@@ -50,9 +50,8 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
       <div>
-        <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="display mt-2.5 text-[1.9rem] text-ink">Sign in to your portal</h1>
-        <p className="mt-1.5 text-sm text-muted">Manage flats, residents, billing and visitors.</p>
+        <h1 className="display text-[1.9rem] text-ink">Welcome back</h1>
+        <p className="mt-1.5 text-sm text-muted">Sign in to your Atrium workspace.</p>
       </div>
 
       {errors._form && <p className="text-sm text-danger">{errors._form}</p>}

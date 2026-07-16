@@ -1,6 +1,6 @@
 /**
- * Composes the Flats list: server-filtered/paginated flats joined with owner,
- * active tenant, and building names resolved from the reference lookups.
+ * Composes the Flats list: server-filtered/paginated flats joined with owner
+ * and active tenant names resolved from the reference lookups.
  */
 import { useMemo } from 'react';
 
@@ -9,7 +9,6 @@ import type { ListParams } from '@/types/http';
 
 import { flatHooks } from './resources';
 import {
-  useBuildingsLookup,
   useOccupantsLookup,
   useOwnersLookup,
   usePeopleLookup,
@@ -17,15 +16,13 @@ import {
 
 export interface FlatRow {
   flat: Flat;
-  buildingName: string;
   ownerName: string | null;
   tenantName: string | null;
 }
 
-/** Server-filtered/paginated/sorted flats, joined with owner/tenant/building names. */
+/** Server-filtered/paginated/sorted flats, joined with owner/tenant names. */
 export function useFlatRows(listParams: ListParams) {
   const flats = flatHooks.useList(listParams);
-  const buildings = useBuildingsLookup();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
   const occupants = useOccupantsLookup();
@@ -39,19 +36,17 @@ export function useFlatRows(listParams: ListParams) {
       const tenantName = tenant ? people.map.get(tenant.person)?.full_name ?? null : null;
       return {
         flat,
-        buildingName: buildings.map.get(flat.building)?.name ?? '—',
         ownerName,
         tenantName,
       };
     });
-  }, [flats.data, buildings.map, owners.map, people.map, occupants.activeByFlat]);
+  }, [flats.data, owners.map, people.map, occupants.activeByFlat]);
 
   return {
     rows,
     count: flats.data?.count ?? 0,
     isLoading:
       flats.isPending ||
-      buildings.isPending ||
       owners.isPending ||
       people.isPending ||
       occupants.isPending,

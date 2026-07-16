@@ -1,7 +1,7 @@
 /**
- * Assembles everything the Flat detail page needs: the flat, its building,
- * owner + active tenant (people resolved via lookups), vehicles belonging to
- * those people, the flat's bills/charges, and the outstanding-dues total.
+ * Assembles everything the Flat detail page needs: the flat, owner + active
+ * tenant (people resolved via lookups), vehicles belonging to those people,
+ * the flat's bills/charges, and the outstanding-dues total.
  */
 import { useMemo } from 'react';
 
@@ -14,7 +14,6 @@ import {
   vehicleHooks,
 } from './resources';
 import {
-  useBuildingsLookup,
   useOccupantsLookup,
   useOwnersLookup,
   usePeopleLookup,
@@ -26,7 +25,6 @@ function sum(values: string[]): number {
 
 export function useFlatDetail(flatId: number) {
   const flat = flatHooks.useItem(flatId);
-  const buildings = useBuildingsLookup();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
   const occupants = useOccupantsLookup();
@@ -36,7 +34,6 @@ export function useFlatDetail(flatId: number) {
 
   return useMemo(() => {
     const flatData = flat.data ?? null;
-    const building = flatData ? buildings.map.get(flatData.building) ?? null : null;
 
     const ownerRec = flatData?.owner != null ? owners.map.get(flatData.owner) : undefined;
     const owner: Person | null = ownerRec ? people.map.get(ownerRec.person) ?? null : null;
@@ -60,7 +57,6 @@ export function useFlatDetail(flatId: number) {
 
     return {
       flat: flatData,
-      building,
       owner,
       tenant,
       resident,
@@ -79,7 +75,7 @@ export function useFlatDetail(flatId: number) {
     };
   }, [
     flat.data, flat.isPending, flat.isError, flatId,
-    buildings.map, owners.map, people.map, occupants.activeByFlat,
+    owners.map, people.map, occupants.activeByFlat,
     vehicles.data, bills.data, bills.isPending, charges.data, charges.isPending,
   ]);
 }

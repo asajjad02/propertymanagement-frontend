@@ -10,19 +10,25 @@ export function PersonFormDialog({
   person,
   open,
   onOpenChange,
+  initialRole,
+  title,
+  description,
 }: {
   person?: Person;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialRole?: 'owner' | 'tenant' | 'both';
+  title?: string;
+  description?: string;
 }) {
   return (
     <Modal
       open={open}
       onOpenChange={onOpenChange}
-      title={person ? 'Edit resident' : 'Add resident'}
-      description={person ? 'Update this person’s details.' : 'Create a new resident profile.'}
+      title={title ?? (person ? 'Edit resident' : 'Add resident')}
+      description={description ?? (person ? 'Update this person’s details.' : 'Create a new resident profile.')}
     >
-      <PersonForm person={person} onDone={() => onOpenChange(false)} />
+      <PersonForm person={person} onDone={() => onOpenChange(false)} initialRole={initialRole} />
     </Modal>
   );
 }

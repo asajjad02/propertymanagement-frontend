@@ -15,7 +15,7 @@ type FlatDetail = ReturnType<typeof useFlatDetail>;
 
 /** Overview tab: two-column body (info + people/vehicles | summary + bills). */
 export function FlatOverview({ detail }: { detail: FlatDetail }) {
-  const { flat, building, owner, resident, residentIsOwner, activeOccupantId, vehicles, bills, charges, outstanding, billsLoading } = detail;
+  const { flat, owner, resident, residentIsOwner, activeOccupantId, vehicles, bills, charges, outstanding, billsLoading } = detail;
   if (!flat) return null;
 
   return (
@@ -24,10 +24,9 @@ export function FlatOverview({ detail }: { detail: FlatDetail }) {
         <InfoCard
           title="Property details"
           fields={[
-            { label: 'Building', value: building?.name ?? '—' },
             { label: 'Flat number', value: flat.flat_number },
             { label: 'Floor', value: flat.floor_number },
-            { label: 'Type', value: <span className="capitalize">{flat.flat_type}</span> },
+            { label: 'Type', value: flat.apartment_type_name || flat.flat_type || '—' },
           ]}
         />
         <FlatOwnerCard flatId={flat.id} owner={owner} />

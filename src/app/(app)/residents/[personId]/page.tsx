@@ -13,7 +13,7 @@ import { DetailHeader } from '@/components/ui/detail-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingBlock } from '@/components/ui/spinner';
 import { Tabs } from '@/components/ui/tabs';
-import { TypeTag } from '@/components/ui/type-tag';
+import { RoleBadge } from '@/components/ui/role-badge';
 import { ResidentVehicles } from '@/components/vehicles/resident-vehicles';
 import { useResidentDetail } from '@/hooks/use-resident-detail';
 
@@ -35,7 +35,7 @@ export default function ResidentProfilePage() {
     return <EmptyState title="Resident not found" description="It may have been removed." />;
   }
 
-  const { person, types, flat } = detail;
+  const { person, role, flat } = detail;
 
   return (
     <div className="space-y-6">
@@ -44,7 +44,7 @@ export default function ResidentProfilePage() {
         backLabel="All residents"
         title={person.full_name}
         leading={<Avatar name={person.full_name} size="lg" />}
-        status={types.map((t) => <TypeTag key={t} type={t} />)}
+        status={<RoleBadge role={role} />}
         meta={flat ? `Flat ${flat.flat_number}` : 'No active flat'}
         actions={<ResidentActions person={person} />}
       />

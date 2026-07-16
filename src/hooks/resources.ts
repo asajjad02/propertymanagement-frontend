@@ -17,6 +17,7 @@ import { createResourceHooks } from './create-resource-hooks';
 // Properties
 export const buildingHooks = createResourceHooks('buildings', api.buildings);
 export const flatHooks = createResourceHooks('flats', api.flats);
+export const apartmentTypeHooks = createResourceHooks('apartment-types', api.apartmentTypes);
 
 // Residents
 export const personHooks = createResourceHooks('people', api.people);

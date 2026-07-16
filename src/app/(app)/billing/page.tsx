@@ -16,11 +16,9 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
 import { Segmented } from '@/components/ui/segmented';
-import { Select } from '@/components/ui/select';
 import { StatCard, StatCardRow } from '@/components/ui/stat-card';
 import { useBillRows } from '@/hooks/use-bill-rows';
 import { useBillStats } from '@/hooks/use-bill-stats';
-import { useBuildingsLookup } from '@/hooks/use-lookups';
 import { useTableQuery } from '@/hooks/use-table-query';
 import { shortDate } from '@/lib/format';
 
@@ -37,28 +35,15 @@ export default function BillingListPage() {
   const router = useRouter();
   const q = useTableQuery({
     key: 'billing',
-    filterKeys: ['status', 'flat', 'building', 'period_after', 'period_before'],
+    filterKeys: ['status', 'flat', 'period_after', 'period_before'],
     defaultOrdering: '-billing_period_end',
   });
 
   const stats = useBillStats();
-  const buildings = useBuildingsLookup();
   const { rows, count, isLoading } = useBillRows(q.listParams);
-
-  const buildingOptions = useMemo(
-    () => [
-      { value: 'all', label: 'All buildings' },
-      ...(buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    ],
-    [buildings.data],
-  );
 
   const chips = useMemo<FilterChip[]>(() => {
     const list: FilterChip[] = [];
-    if (q.filters.building) {
-      const name = buildings.map.get(Number(q.filters.building))?.name ?? q.filters.building;
-      list.push({ id: 'building', label: `Building: ${name}`, onRemove: () => q.setFilter('building', undefined) });
-    }
     if (q.filters.period_after || q.filters.period_before) {
       const from = q.filters.period_after ? shortDate(q.filters.period_after) : '…';
       const to = q.filters.period_before ? shortDate(q.filters.period_before) : '…';
@@ -72,7 +57,7 @@ export default function BillingListPage() {
       list.push({ id: 'search', label: `Search: “${q.search}”`, onRemove: () => q.setSearch('') });
     }
     return list;
-  }, [q, buildings.map]);
+  }, [q]);
 
   return (
     <div className="space-y-6">
@@ -111,11 +96,6 @@ export default function BillingListPage() {
             }
             right={
               <>
-                <Select
-                  value={q.filters.building ?? 'all'}
-                  onValueChange={(v) => q.setFilter('building', v === 'all' ? undefined : v)}
-                  options={buildingOptions}
-                />
                 <DateRangeFilter
                   value={{ from: q.filters.period_after, to: q.filters.period_before }}
                   onChange={(range) => q.setFilters({ period_after: range.from, period_before: range.to })}

@@ -16,9 +16,7 @@ import { Select } from '@/components/ui/select';
 import { StatCard, StatCardRow } from '@/components/ui/stat-card';
 import { useFlatRows } from '@/hooks/use-flat-rows';
 import { useFlatStats } from '@/hooks/use-flat-stats';
-import { useBuildingsLookup } from '@/hooks/use-lookups';
 import { useTableQuery } from '@/hooks/use-table-query';
-import { FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
 
 const OCCUPANCY_TABS = [
   { value: 'all', label: 'All' },
@@ -26,7 +24,14 @@ const OCCUPANCY_TABS = [
   { value: 'vacant', label: 'Vacant' },
 ];
 
-const TYPE_OPTIONS = [{ value: 'all', label: 'All types' }, ...FLAT_TYPE_OPTIONS];
+const TYPE_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  { value: 'studio', label: 'Studio' },
+  { value: '1-bed', label: '1-Bed' },
+  { value: '2-bed', label: '2-Bed' },
+  { value: '3-bed', label: '3-Bed' },
+  { value: 'penthouse', label: 'Penthouse' },
+];
 
 const PAGE_SIZE = 20;
 
@@ -34,28 +39,15 @@ export default function FlatsListPage() {
   const router = useRouter();
   const q = useTableQuery({
     key: 'flats',
-    filterKeys: ['occupancy_status', 'building', 'flat_type'],
+    filterKeys: ['occupancy_status', 'flat_type'],
     defaultOrdering: 'flat_number',
   });
 
   const stats = useFlatStats();
-  const buildings = useBuildingsLookup();
   const { rows, count, isLoading } = useFlatRows(q.listParams);
-
-  const buildingOptions = useMemo(
-    () => [
-      { value: 'all', label: 'All buildings' },
-      ...(buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    ],
-    [buildings.data],
-  );
 
   const chips = useMemo<FilterChip[]>(() => {
     const list: FilterChip[] = [];
-    if (q.filters.building) {
-      const name = buildings.map.get(Number(q.filters.building))?.name ?? q.filters.building;
-      list.push({ id: 'building', label: `Building: ${name}`, onRemove: () => q.setFilter('building', undefined) });
-    }
     if (q.filters.flat_type) {
       const label = TYPE_OPTIONS.find((t) => t.value === q.filters.flat_type)?.label ?? q.filters.flat_type;
       list.push({ id: 'flat_type', label: `Type: ${label}`, onRemove: () => q.setFilter('flat_type', undefined) });
@@ -64,13 +56,13 @@ export default function FlatsListPage() {
       list.push({ id: 'search', label: `Search: “${q.search}”`, onRemove: () => q.setSearch('') });
     }
     return list;
-  }, [q, buildings.map]);
+  }, [q]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Flats"
-        subtitle="Units across all buildings in your account."
+        subtitle="Units in your account."
         actions={<AddFlatButton />}
       />
 
@@ -78,7 +70,6 @@ export default function FlatsListPage() {
         <StatCard label="Total flats" value={stats.total} />
         <StatCard label="Occupied" value={stats.occupied} tone="green" />
         <StatCard label="Vacant" value={stats.vacant} tone="neutral" />
-        <StatCard label="Buildings" value={stats.buildings} />
       </StatCardRow>
 
       <Card>
@@ -93,11 +84,6 @@ export default function FlatsListPage() {
             }
             right={
               <>
-                <Select
-                  value={q.filters.building ?? 'all'}
-                  onValueChange={(v) => q.setFilter('building', v === 'all' ? undefined : v)}
-                  options={buildingOptions}
-                />
                 <Select
                   value={q.filters.flat_type ?? 'all'}
                   onValueChange={(v) => q.setFilter('flat_type', v === 'all' ? undefined : v)}

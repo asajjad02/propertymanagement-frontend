@@ -33,7 +33,7 @@ export default function FlatDetailPage() {
     return <EmptyState title="Flat not found" description="It may have been removed." />;
   }
 
-  const { flat, building } = detail;
+  const { flat } = detail;
 
   return (
     <div className="space-y-6">
@@ -42,7 +42,7 @@ export default function FlatDetailPage() {
         backLabel="All flats"
         title={`Flat ${flat.flat_number}`}
         status={<StatusBadge status={flat.occupancy_status} />}
-        meta={`${building?.name ?? 'Unknown building'} · Floor ${flat.floor_number}`}
+        meta={`Floor ${flat.floor_number}`}
         actions={<FlatActions flat={flat} />}
       />
 

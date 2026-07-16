@@ -16,7 +16,7 @@ import { shortDate } from '@/lib/format';
 export default function BillDetailPage() {
   const params = useParams<{ billId: string }>();
   const billId = Number(params.billId);
-  const { bill, flat, building, meterNumber, payments, isLoading } = useBillDetail(billId);
+  const { bill, flat, meterNumber, payments, isLoading } = useBillDetail(billId);
 
   if (isLoading) return <LoadingBlock />;
   if (!bill) return <EmptyState title="Bill not found" description="It may have been removed." />;
@@ -33,7 +33,7 @@ export default function BillDetailPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_1fr]">
-        <Invoice bill={bill} flat={flat} building={building} meterNumber={meterNumber} />
+        <Invoice bill={bill} flat={flat} meterNumber={meterNumber} />
         <div className="space-y-6">
           <PaymentPanel bill={bill} payments={payments} />
           <SendPanel billId={bill.id} />

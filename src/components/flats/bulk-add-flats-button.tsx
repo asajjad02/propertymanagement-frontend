@@ -11,8 +11,7 @@ import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
-import { useBuildingsLookup } from '@/hooks/use-lookups';
-import { DEFAULT_FLAT_TYPE, FLAT_TYPE_OPTIONS } from '@/lib/flat-types';
+import { useApartmentTypesLookup } from '@/hooks/use-lookups';
 import { queryKeys } from '@/lib/query-keys';
 import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
@@ -28,18 +27,20 @@ export function BulkAddFlatsButton() {
   const { hasRole } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
-  const buildings = useBuildingsLookup();
+  const apartmentTypes = useApartmentTypesLookup();
 
   const [open, setOpen] = useState(false);
-  const [building, setBuilding] = useState('');
-  const [flatType, setFlatType] = useState(DEFAULT_FLAT_TYPE);
+  const [apartmentType, setApartmentType] = useState('');
   const [occupancy, setOccupancy] = useState<OccupancyStatus>('vacant');
   const [numbersText, setNumbersText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const buildingOptions = useMemo(
-    () => (buildings.data ?? []).map((b) => ({ value: String(b.id), label: b.name })),
-    [buildings.data],
+  const typeOptions = useMemo(
+    () =>
+      (apartmentTypes.data ?? [])
+        .filter((t) => t.status === 'active')
+        .map((t) => ({ value: String(t.id), label: t.name })),
+    [apartmentTypes.data],
   );
 
   const create = useMutation({
@@ -47,7 +48,7 @@ export function BulkAddFlatsButton() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: queryKeys.resource('flats').all });
       const skipped = res.skipped.length ? ` · ${res.skipped.length} skipped (already existed)` : '';
-      toast.success(`${res.created} flat${res.created === 1 ? '' : 's'} added`, `In ${buildings.map.get(Number(building))?.name ?? 'building'}${skipped}`);
+      toast.success(`${res.created} flat${res.created === 1 ? '' : 's'} added`, `${res.created} created${skipped}`);
       setNumbersText('');
       setOpen(false);
     },
@@ -62,8 +63,7 @@ export function BulkAddFlatsButton() {
     e.preventDefault();
     setError(null);
     create.mutate({
-      building: Number(building),
-      flat_type: flatType,
+      apartment_type: apartmentType ? Number(apartmentType) : null,
       occupancy_status: occupancy,
       flat_numbers: flatNumbers,
     });
@@ -79,17 +79,12 @@ export function BulkAddFlatsButton() {
         open={open}
         onOpenChange={setOpen}
         title="Add flats in bulk"
-        description="Stand up a whole building at once. Paste one flat number per line — duplicates are skipped."
+        description="Stand up many flats at once. Paste one flat number per line — duplicates are skipped."
       >
         <form onSubmit={onSubmit} className="space-y-4">
-          <Field label="Building" required>
-            {(id) => (
-              <Select id={id} value={building || undefined} onValueChange={setBuilding} options={buildingOptions} placeholder="Select building" className="w-full" />
-            )}
-          </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Type">
-              {(id) => <Select id={id} value={flatType} onValueChange={setFlatType} options={FLAT_TYPE_OPTIONS} className="w-full" />}
+            <Field label="Apartment type" hint={typeOptions.length === 0 ? 'Add types in Configuration' : undefined}>
+              {(id) => <Select id={id} value={apartmentType || undefined} onValueChange={setApartmentType} options={typeOptions} placeholder="Select type" className="w-full" />}
             </Field>
             <Field label="Occupancy">
               {(id) => <Select id={id} value={occupancy} onValueChange={(v) => setOccupancy(v as OccupancyStatus)} options={OCCUPANCY} className="w-full" />}
@@ -109,7 +104,7 @@ export function BulkAddFlatsButton() {
           {error && <p className="text-sm text-danger">{error}</p>}
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending || !building || flatNumbers.length === 0}>
+            <Button type="submit" disabled={create.isPending || flatNumbers.length === 0}>
               Add {flatNumbers.length || ''} flats
             </Button>
           </div>

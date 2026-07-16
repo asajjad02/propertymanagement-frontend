@@ -69,15 +69,14 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
       <div>
-        <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="mt-2.5 display text-[1.9rem] text-ink">Create your account</h1>
-        <p className="mt-1 text-sm text-muted">Set up your society’s management portal.</p>
+        <h1 className="display text-[1.9rem] text-ink">Create your account</h1>
+        <p className="mt-1.5 text-sm text-muted">Set up your society on Atrium in about a minute.</p>
       </div>
 
       {errors._form && <p className="text-sm text-danger">{errors._form}</p>}
 
-      <Field label="Account name" hint="Your society or company name" error={errors.account_name}>
-        {(id) => <Input id={id} value={form.account_name} onChange={set('account_name')} placeholder="Hash Residency" />}
+      <Field label="Society name" hint="The name of your society or company" error={errors.account_name}>
+        {(id) => <Input id={id} value={form.account_name} onChange={set('account_name')} placeholder="e.g. Greenview Residency" />}
       </Field>
       <Field label="Username" error={errors.username}>
         {(id) => <Input id={id} value={form.username} onChange={set('username')} autoComplete="username" required />}
