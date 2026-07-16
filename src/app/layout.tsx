@@ -12,8 +12,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hash Residency",
-  description: "Apartment management system",
+  title: "Atrium",
+  description: "Atrium — the calm command center for your property.",
 };
 
 /*

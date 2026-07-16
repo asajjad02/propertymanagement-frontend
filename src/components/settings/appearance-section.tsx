@@ -52,7 +52,7 @@ export function AppearanceSection() {
     <Card>
       <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
       <CardBody className="space-y-3">
-        <p className="text-sm text-muted">Choose how Hash Residency looks. “System” follows your device setting.</p>
+        <p className="text-sm text-muted">Choose how Atrium looks. “System” follows your device setting.</p>
         <Segmented
           options={OPTIONS}
           value={mounted ? choice : 'system'}

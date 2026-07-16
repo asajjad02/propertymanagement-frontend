@@ -30,7 +30,8 @@ export function VerifyEmailForm({ initialEmail = '' }: { initialEmail?: string }
     setSubmitting(true);
     try {
       await verifyEmail({ email, code });
-      router.replace('/');
+      // Newly verified accounts start in the guided setup wizard.
+      router.replace('/onboarding');
     } catch (err) {
       setError(toApiError(err).message);
     } finally {
@@ -54,9 +55,8 @@ export function VerifyEmailForm({ initialEmail = '' }: { initialEmail?: string }
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5">
       <div>
-        <p className="label-mono text-primary-text">Hash Residency</p>
-        <h1 className="mt-2.5 display text-[1.9rem] text-ink">Verify your email</h1>
-        <p className="mt-1 text-sm text-muted">Enter the 6-digit code we sent to your inbox.</p>
+        <h1 className="display text-[1.9rem] text-ink">Verify your email</h1>
+        <p className="mt-1.5 text-sm text-muted">Enter the 6-digit code we sent to your inbox.</p>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}

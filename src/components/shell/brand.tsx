@@ -1,15 +1,7 @@
-import { cn } from '@/lib/cn';
+import { AtriumLogo, AtriumMark } from '@/components/brand/atrium-logo';
 
-/** Hash Residency brand mark: indigo "H" tile + wordmark (hidden when collapsed). */
+/** Atrium product brand: Aperture mark + wordmark (mark only when collapsed). */
 export function Brand({ collapsed }: { collapsed?: boolean }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-primary text-[1.05rem] font-semibold tracking-tight text-white shadow-hair">
-        H
-      </div>
-      <span className={cn('font-semibold tracking-[-0.01em] text-ink whitespace-nowrap', collapsed && 'hidden')}>
-        Hash Residency
-      </span>
-    </div>
-  );
+  if (collapsed) return <AtriumMark size={32} />;
+  return <AtriumLogo markSize={32} />;
 }
