@@ -13,11 +13,11 @@ import { toApiError } from '@/lib/errors';
 import { runValidators, serverFieldErrors, validators, type FieldErrors } from '@/lib/validation';
 import { useAuth } from '@/providers/auth-provider';
 
-/** Username/password sign-in. Backend authenticates by username (not email). */
+/** Email/password sign-in. Backend authenticates by email (not username). */
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [needsVerify, setNeedsVerify] = useState(false);
@@ -27,7 +27,7 @@ export function LoginForm() {
     e.preventDefault();
     setNeedsVerify(false);
     const clientErrors = runValidators({
-      username: () => validators.required(username, 'Username'),
+      email: () => validators.email(email),
       password: () => validators.required(password, 'Password'),
     });
     setErrors(clientErrors);
@@ -35,7 +35,7 @@ export function LoginForm() {
 
     setSubmitting(true);
     try {
-      await login({ username, password });
+      await login({ email, password });
       router.replace('/');
     } catch (err) {
       const apiError = toApiError(err);
@@ -63,9 +63,9 @@ export function LoginForm() {
         </p>
       )}
 
-      <Field label="Username" error={errors.username}>
+      <Field label="Email" error={errors.email}>
         {(id) => (
-          <Input id={id} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" required />
+          <Input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         )}
       </Field>
       <Field label="Password" error={errors.password}>
