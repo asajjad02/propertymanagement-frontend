@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { AddFlatButton } from '@/components/flats/add-flat-button';
-import { BulkAddFlatsButton } from '@/components/flats/bulk-add-flats-button';
 import { FlatsTable } from '@/components/flats/flats-table';
 import { Card } from '@/components/ui/card';
 import { FilterBar } from '@/components/ui/filter-bar';
@@ -64,12 +63,7 @@ export default function FlatsListPage() {
       <PageHeader
         title="Flats"
         subtitle="Units in your account."
-        actions={
-          <>
-            <BulkAddFlatsButton />
-            <AddFlatButton />
-          </>
-        }
+        actions={<AddFlatButton />}
       />
 
       <StatCardRow>
