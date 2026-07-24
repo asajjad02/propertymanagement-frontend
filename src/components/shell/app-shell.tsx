@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePersistedFlag } from '@/hooks/use-persisted-flag';
 
+import { ImpersonationBanner } from './impersonation-banner';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
 
@@ -47,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
+          <ImpersonationBanner />
           <Topbar onOpenMenu={() => setMobileOpen(true)} />
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
         </div>

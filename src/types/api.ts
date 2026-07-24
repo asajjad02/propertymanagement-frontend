@@ -81,6 +81,8 @@ export interface MeResponse {
   email_verified: boolean;
   full_name: string;
   phone: string;
+  /** Username of the superuser impersonating this session, or null. */
+  impersonated_by: string | null;
 }
 
 /** PATCH /api/auth/me/ — the user editing their own profile. */

@@ -35,7 +35,11 @@ interface AuthContextValue {
   account: Account | null;
   role: Role | null;
   isAuthenticated: boolean;
+  /** Username of the superuser impersonating this session, or null. */
+  impersonatedBy: string | null;
   login: (input: LoginInput) => Promise<void>;
+  /** Exchange an admin-issued impersonation ticket for a target-user session. */
+  impersonate: (ticket: string) => Promise<void>;
   /**
    * Registers a user. Signs in immediately when the backend returns tokens
    * (email verification disabled); otherwise verification is required next.
@@ -65,6 +69,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (input: LoginInput) => {
       await authApi.login(input);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
+    },
+    [queryClient],
+  );
+
+  const impersonate = useCallback(
+    async (ticket: string) => {
+      await authApi.impersonate(ticket);
+      // The previous session's `me` is cached — force a refetch as the target.
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me });
     },
     [queryClient],
@@ -110,13 +123,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       account: me?.account ?? null,
       role,
       isAuthenticated: status === 'authenticated',
+      impersonatedBy: me?.impersonated_by ?? null,
       login,
+      impersonate,
       register,
       verifyEmail,
       logout,
       hasRole: (...roles: Role[]) => (roles.length === 0 ? !!role : !!role && roles.includes(role)),
     };
-  }, [meQuery.data, meQuery.isPending, meQuery.isError, tokenPresent, login, register, verifyEmail, logout]);
+  }, [meQuery.data, meQuery.isPending, meQuery.isError, tokenPresent, login, impersonate, register, verifyEmail, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
