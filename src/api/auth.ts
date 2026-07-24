@@ -34,6 +34,17 @@ export async function register(input: RegisterInput): Promise<RegisterResponse> 
   return data;
 }
 
+/**
+ * Exchange a signed impersonation ticket (from the admin deep link) for the
+ * target user's token pair, replacing any current session. The ticket itself
+ * is the authorization; it was minted by a superuser in the Django admin.
+ */
+export async function impersonate(ticket: string): Promise<TokenPair> {
+  const { data } = await apiClient.post<TokenPair>('/auth/impersonate/', { ticket });
+  setTokens({ access: data.access, refresh: data.refresh });
+  return data;
+}
+
 /** Verify the email OTP. On success the backend returns the token pair. */
 export async function verifyEmail(input: VerifyEmailInput): Promise<TokenPair> {
   const { data } = await apiClient.post<TokenPair>('/auth/verify-email/', input);
