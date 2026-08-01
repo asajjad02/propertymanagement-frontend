@@ -18,9 +18,15 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
  * A rounded, bordered box inside a 16px page gutter is desktop furniture: on a
  * phone it's a frame around a frame, it costs 32px of width, and a column of
  * them turns a screen into a stack of floating boxes instead of a document. So
- * below `md` the side borders and the radius go, the section runs edge to edge,
- * and only the top and bottom hairlines survive to separate it from its
- * neighbours.
+ * below `md` the side borders and the radius go and the section runs edge to
+ * edge.
+ *
+ * Only a **bottom** hairline survives. `--paper` (#fbfbfc) and `--surface`
+ * (#ffffff) differ by about 1.5%, so the page showing through the gap between
+ * two sections is invisible — with a border on both edges that gap read as an
+ * empty band ruled top and bottom. With one divider per section the gap merges
+ * into a continuous field and the sections read as a document, which is also
+ * why the page-level `space-y` doesn't need to change.
  */
 export function Card({ className, boxed = false, ...props }: CardProps) {
   return (
@@ -29,7 +35,7 @@ export function Card({ className, boxed = false, ...props }: CardProps) {
         'bg-surface border-hairline',
         boxed
           ? 'rounded-card border'
-          : '-mx-4 border-y md:mx-0 md:rounded-card md:border',
+          : '-mx-4 border-b md:mx-0 md:rounded-card md:border',
         className,
       )}
       {...props}

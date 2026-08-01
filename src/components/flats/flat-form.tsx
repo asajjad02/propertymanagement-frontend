@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { OwnerQuickForm } from '@/components/owners/owner-quick-form';
@@ -12,7 +12,6 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Segmented } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
-import { cn } from '@/lib/cn';
 import { flatHooks } from '@/hooks/resources';
 import { useApartmentTypesLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
@@ -26,18 +25,10 @@ const OCCUPANCY = [
 export interface FlatFormProps {
   flat?: Flat;
   onDone: () => void;
-  /** True while the "New owner" sub-view is showing (owned by the dialog). */
-  creatingOwner?: boolean;
-  onCreatingOwnerChange?: (creating: boolean) => void;
 }
 
 /** Create/edit a flat. Pass `flat` to edit; omit to create. */
-export function FlatForm({
-  flat,
-  onDone,
-  creatingOwner = false,
-  onCreatingOwnerChange,
-}: FlatFormProps) {
+export function FlatForm({ flat, onDone }: FlatFormProps) {
   const toast = useToast();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
@@ -51,6 +42,7 @@ export function FlatForm({
   const [floor, setFloor] = useState(String(flat?.floor_number ?? 1));
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
+  const [addingOwner, setAddingOwner] = useState(false);
 
   function resetForFlatEntry() {
     // Keep type/occupancy (likely the same for the next unit); clear the
@@ -109,13 +101,7 @@ export function FlatForm({
 
   return (
     <>
-      {/*
-       * Hidden rather than unmounted while the owner sub-view is up: everything
-       * already typed into the flat form has to still be here when the user
-       * comes back. A sibling of the owner form, never a parent — nesting one
-       * <form> inside another is invalid HTML.
-       */}
-      <form onSubmit={onSubmit} className={cn('space-y-4', creatingOwner && 'hidden')}>
+      <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Flat number" required>
             {(id) => (
@@ -172,29 +158,52 @@ export function FlatForm({
           )}
         </Field>
 
-        <Field label="Owner" hint="Optional">
+        <Field label="Owner" hint={addingOwner ? undefined : 'Optional'}>
           {(id) => (
-            <div className="flex items-center gap-2">
-              {/* Owners grow without bound, so this is type-to-filter rather
-                  than a scrolling list. */}
-              <SearchableSelect
-                id={id}
-                value={owner || undefined}
-                onValueChange={setOwner}
-                options={ownerOptions}
-                placeholder="No owner"
-                searchPlaceholder="Search owners…"
-                className="w-full flex-1"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onCreatingOwnerChange?.(true)}
-                aria-label="Create a new owner"
-              >
-                <Plus className="h-4 w-4" />
-                New
-              </Button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                {/* Owners grow without bound, so this is type-to-filter rather
+                    than a scrolling list. */}
+                <SearchableSelect
+                  id={id}
+                  value={owner || undefined}
+                  onValueChange={setOwner}
+                  options={ownerOptions}
+                  placeholder="No owner"
+                  searchPlaceholder="Search owners…"
+                  className="w-full flex-1"
+                  disabled={addingOwner}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setAddingOwner((v) => !v)}
+                  aria-expanded={addingOwner}
+                  aria-label={addingOwner ? 'Cancel new owner' : 'Create a new owner'}
+                >
+                  {addingOwner ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {addingOwner ? 'Cancel' : 'New'}
+                </Button>
+              </div>
+
+              {/*
+               * The owner's fields open in place, under the picker they belong
+               * to. Pushing a sub-view for three fields hid the flat you were
+               * halfway through describing and made a small aside feel like
+               * leaving the task.
+               */}
+              {addingOwner && (
+                <div className="rounded-control border border-hairline bg-raised p-3 motion-safe:animate-[subview-in_160ms_ease-out]">
+                  <OwnerQuickForm
+                    autoFocus
+                    submitLabel="Add owner"
+                    onCreated={(ownerId) => {
+                      setOwner(String(ownerId));
+                      setAddingOwner(false);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </Field>
@@ -224,19 +233,6 @@ export function FlatForm({
           </Button>
         </FormActions>
       </form>
-
-      {creatingOwner && (
-        <div className="motion-safe:animate-[subview-in_180ms_ease-out]">
-          <OwnerQuickForm
-            onCreated={(ownerId) => {
-              // Select the new owner and drop straight back to the flat form.
-              setOwner(String(ownerId));
-              onCreatingOwnerChange?.(false);
-            }}
-            onCancel={() => onCreatingOwnerChange?.(false)}
-          />
-        </div>
-      )}
     </>
   );
 }
