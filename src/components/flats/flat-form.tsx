@@ -3,6 +3,7 @@
 import { Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { meters as metersApi } from '@/api/endpoints';
 import { OwnerQuickForm } from '@/components/owners/owner-quick-form';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
@@ -12,7 +13,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Segmented } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
-import { flatHooks } from '@/hooks/resources';
+import { flatHooks, meterHooks } from '@/hooks/resources';
 import { useApartmentTypesLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
 import type { Flat, FlatInput } from '@/types/api';
@@ -35,6 +36,7 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
   const apartmentTypes = useApartmentTypesLookup();
   const create = flatHooks.useCreate();
   const update = flatHooks.useUpdate();
+  const patchMeter = meterHooks.usePatch();
 
   const [owner, setOwner] = useState(flat?.owner ? String(flat.owner) : '');
   const [apartmentType, setApartmentType] = useState(flat?.apartment_type ? String(flat.apartment_type) : '');
@@ -43,6 +45,14 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
   const [addingOwner, setAddingOwner] = useState(false);
+  /*
+   * The backend gives every new flat a meter starting at 0. A real meter on a
+   * real wall doesn't read 0, and billing `current - 0` would charge the
+   * resident for its entire lifetime. Capturing it here means the first bill is
+   * right without anyone having to remember; left blank it stays 0, which is
+   * correct for a genuinely new meter.
+   */
+  const [meterReading, setMeterReading] = useState('');
 
   function resetForFlatEntry() {
     // Keep type/occupancy (likely the same for the next unit); clear the
@@ -69,7 +79,34 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
     [apartmentTypes.data],
   );
 
-  const pending = create.isPending || update.isPending;
+  const pending = create.isPending || update.isPending || patchMeter.isPending;
+
+  /**
+   * Set the starting reading on the meter the backend just created with the flat.
+   *
+   * Two requests because flat-create doesn't accept an initial reading — see
+   * docs/backend/mobile-rebuild-plan.md §2. A failure here is reported but not
+   * treated as a failed save: the flat exists, and the reading can be corrected
+   * on the first meter round.
+   */
+  async function setStartingReading(flatId: number) {
+    const value = meterReading.trim();
+    if (!value || Number(value) === 0) return;
+    try {
+      const { results } = await metersApi.list({ filters: { flat: flatId } });
+      const meter = results[0];
+      if (!meter) return;
+      await patchMeter.mutateAsync({
+        id: meter.id,
+        payload: { current_reading: value, previous_reading: value },
+      });
+    } catch {
+      toast.warning(
+        'Flat saved, meter reading not set',
+        `${flatNumber}: set the starting reading on the next meter round.`,
+      );
+    }
+  }
 
   async function submit(closeAfter: boolean) {
     setError(null);
@@ -84,8 +121,12 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
       occupancy_status: occupancy as FlatInput['occupancy_status'],
     };
     try {
-      if (flat) await update.mutateAsync({ id: flat.id, payload });
-      else await create.mutateAsync(payload);
+      if (flat) {
+        await update.mutateAsync({ id: flat.id, payload });
+      } else {
+        const created = await create.mutateAsync(payload);
+        await setStartingReading(created.id);
+      }
       toast.success(flat ? 'Flat updated' : 'Flat added', `${flatNumber} saved.`);
       if (closeAfter) onDone();
       else resetForFlatEntry();
@@ -144,6 +185,28 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
             />
           )}
         </Field>
+
+        {/* Creating only: the flat's meter is made server-side starting at 0,
+            and only the person standing at it knows what it really reads. */}
+        {!flat && (
+          <Field
+            label="Current meter reading"
+            hint="Optional — what the meter reads today. Leave blank for a brand-new meter."
+          >
+            {(id) => (
+              <Input
+                id={id}
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={meterReading}
+                onChange={(e) => setMeterReading(e.target.value)}
+                placeholder="0"
+                className="tabular-nums"
+              />
+            )}
+          </Field>
+        )}
 
         {/* Two mutually exclusive states — both worth seeing at once, and one
             tap to switch. A dropdown here hid half the answer behind a tap. */}

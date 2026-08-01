@@ -162,6 +162,20 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const working = createBill.isPending || enterReading.isPending;
 
   /*
+   * A meter that has never been read sits at 0, but the dial on the wall
+   * doesn't. Billing `current - 0` would charge the resident for the meter's
+   * entire lifetime, so the first time round a flat we ask what it currently
+   * reads and use that as the baseline.
+   *
+   * Only offered before the bill exists: once a draft is created its
+   * `previous_reading` is fixed, and quietly changing it would move a number
+   * the bill has already been built on.
+   */
+  const needsBaseline = !stop.bill && Number(stop.previousReading) === 0;
+  const [baseline, setBaseline] = useState('');
+  const effectivePrevious = needsBaseline && baseline ? baseline : stop.previousReading;
+
+  /*
    * The photo is the evidence for the reading, so it's required, not optional —
    * a bill issued without one can't be defended if a resident disputes it.
    * Upload first: if it fails we stop with nothing issued, rather than leaving a
@@ -183,7 +197,7 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
           meter: stop.meterId,
           billing_period_start: period.start,
           billing_period_end: period.end,
-          previous_reading: stop.previousReading,
+          previous_reading: effectivePrevious,
           // Recomputed server-side on issue; sent only to satisfy the payload.
           previous_outstanding: '0',
         });
@@ -200,7 +214,7 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
         payload: { current_reading: reading, reading_date: TODAY },
       });
     } catch {
-      toast.error('Could not issue bill', `${flatNumber}: check the reading is above ${numeric(stop.previousReading)}.`);
+      toast.error('Could not issue bill', `${flatNumber}: check the reading is above ${numeric(effectivePrevious)}.`);
       return;
     }
     try {
@@ -248,8 +262,32 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     <li className="px-4 py-3.5">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-base font-semibold text-ink">{flatNumber}</span>
-        <span className="label-mono">Prev {numeric(stop.previousReading)}</span>
+        {needsBaseline ? (
+          <span className="label-mono text-warn">First reading</span>
+        ) : (
+          <span className="label-mono">Prev {numeric(stop.previousReading)}</span>
+        )}
       </div>
+
+      {/* No history for this meter yet — ask what it reads now so the first
+          bill charges the month, not the meter's whole life. */}
+      {needsBaseline && (
+        <div className="mt-2.5">
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={baseline}
+            onChange={(e) => setBaseline(e.target.value)}
+            placeholder="Previous reading (start point)"
+            className="h-12 w-full tabular-nums"
+            aria-label={`${flatNumber} previous reading`}
+          />
+          <p className="mt-1 text-xs text-muted">
+            This meter has no history. Enter what it read at the start of the period — leave 0 only
+            if it is genuinely a new meter.
+          </p>
+        </div>
+      )}
 
       {/*
        * Two rows on a phone. Cramming reading + camera + Issue onto one 390px
