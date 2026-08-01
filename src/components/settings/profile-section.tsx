@@ -52,17 +52,17 @@ export function ProfileSection() {
             {(id) => <Input id={id} value={me?.user.username ?? ''} disabled />}
           </Field>
           <Field label="Full name">
-            {(id) => <Input id={id} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Sana Ahmed" />}
+            {(id) => <Input autoCapitalize="words" id={id} value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Sana Ahmed" />}
           </Field>
           <Field label="Phone">
-            {(id) => <Input id={id} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+92 …" />}
+            {(id) => <Input type="tel" inputMode="tel" autoComplete="tel" id={id} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+92 …" />}
           </Field>
           <Field label="Email">
             {(id) => <Input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}
           </Field>
           {error && <p className="text-sm text-danger">{error}</p>}
           <div className="pt-1">
-            <Button type="submit" disabled={save.isPending}>Save changes</Button>
+            <Button type="submit" loading={save.isPending} disabled={save.isPending}>Save changes</Button>
           </div>
         </form>
       </CardBody>

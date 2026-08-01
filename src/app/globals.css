@@ -181,13 +181,108 @@
   box-shadow: var(--shadow-pop);
 }
 
+/*
+ * ---- Mobile foundation ---------------------------------------------------
+ * The document is rendered with `viewport-fit=cover` (see app/layout.tsx), so
+ * fixed chrome must pay back the hardware insets itself. These vars normalise
+ * env() — which is 0px on desktop and inside browsers that don't support it —
+ * so components can compose insets into arbitrary values without repeating the
+ * fallback: e.g. `pb-[calc(1rem+var(--safe-b))]`.
+ */
+:root {
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  /* Fixed chrome heights, shared by the shell and by anything that must clear
+     it (sticky table headers, scroll-margin, sheet max-heights). */
+  --topbar-h: 3.5rem; /* h-14 */
+  --bottomnav-h: 3.5rem; /* h-14; excludes --safe-b, which is added on top */
+}
+
+/* Single-edge safe-area padding. */
+@utility pt-safe {
+  padding-top: var(--safe-t);
+}
+@utility pb-safe {
+  padding-bottom: var(--safe-b);
+}
+@utility px-safe {
+  padding-left: var(--safe-l);
+  padding-right: var(--safe-r);
+}
+
+/* Clears the fixed bottom nav *and* the home indicator. Applied to the main
+   scroll region so the last row of content is never trapped under the bar. */
+@utility pb-bottom-nav {
+  padding-bottom: calc(var(--bottomnav-h) + var(--safe-b));
+}
+
+/* Minimum comfortable touch target (44px — the smaller of the iOS 44 / Android
+   48 guidance, applied as a floor). Use on icon-only controls whose visual box
+   is intentionally smaller than the hit area. */
+@utility touch-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/*
+ * Placeholder surface for content that hasn't arrived. A slow sweep rather than
+ * a pulse: it reads as "in progress" without the whole screen throbbing when a
+ * list of twenty of them renders at once. Falls back to a flat block when the
+ * viewer has asked for reduced motion.
+ */
+@utility skeleton {
+  background-color: var(--raised);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--hairline) 70%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  border-radius: var(--radius-control);
+  animation: skeleton-sweep 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background-image: none;
+  }
+}
+
 /* ---- Base --------------------------------------------------------------- */
+html {
+  /* Stop iOS inflating text when a phone is rotated to landscape — it silently
+     breaks carefully sized dense layouts. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Keep overscroll inside the app: stops a scroll that runs off the end of a
+     sheet or list from rubber-banding the whole page. */
+  overscroll-behavior-y: contain;
+}
+
+/* Grey flash on every tap is the loudest "this is a website" tell on mobile.
+   Focus-visible rings still provide the real affordance. */
+a,
+button,
+[role='button'],
+input,
+select,
+textarea,
+summary {
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Tabular figures everywhere digits align (money, readings, counts). */
@@ -231,6 +326,48 @@ body {
 @keyframes drawer-in {
   from { transform: translateX(-100%); }
   to { transform: translateX(0); }
+}
+
+/* Bottom-sheet transitions (Sheet / responsive Modal below `md`). */
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+/* Centered-dialog transitions (Sheet / Modal at `md` and up). */
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(4px) scale(0.98); }
+}
+
+/* A sub-view pushed inside an open sheet (e.g. "New owner" from the flat form).
+   Slides in from the trailing edge so the step reads as navigation, the way a
+   pushed screen does, rather than the sheet's contents swapping in place. */
+@keyframes subview-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes skeleton-sweep {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 /* Quiet, consistent custom scrollbars. */

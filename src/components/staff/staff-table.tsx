@@ -35,25 +35,32 @@ export function StaffTable({
             <span className="font-medium text-ink">{c.getValue<string>()}</span>
           </span>
         ),
-        meta: { sortable: true },
+        // The desktop cell carries an avatar; the card wants just the name.
+        meta: { sortable: true, mobile: 'primary', mobileCell: (s) => s.full_name },
       },
-      { id: 'designation', header: 'Designation', accessorFn: (s) => s.designation || '—' },
-      { id: 'phone', header: 'Phone', accessorFn: (s) => s.phone || '—' },
+      {
+        id: 'designation',
+        header: 'Designation',
+        accessorFn: (s) => s.designation || '—',
+        meta: { mobile: 'secondary' },
+      },
+      { id: 'phone', header: 'Phone', accessorFn: (s) => s.phone || '—', meta: { mobile: 'hide' } },
       {
         id: 'joining_date',
         header: 'Joined',
         accessorFn: (s) => (s.joining_date ? shortDate(s.joining_date) : '—'),
-        meta: { sortable: true },
+        meta: { sortable: true, mobile: 'hide' },
       },
       {
         id: 'salary',
         header: 'Monthly salary',
         accessorFn: (s) => money(s.salary),
-        meta: { align: 'right' },
+        meta: { align: 'right', mobile: 'caption', mobileCell: (s) => money(s.salary) },
       },
       {
         id: 'status',
         header: 'Status',
+        meta: { mobile: 'status' },
         accessorFn: (s) => s.status,
         cell: (c) => <StatusBadge status={c.getValue<string>()} />,
       },
@@ -61,7 +68,7 @@ export function StaffTable({
         id: 'chevron',
         header: '',
         cell: () => <ChevronRight className="h-4 w-4 text-faint" />,
-        meta: { align: 'right' },
+        meta: { align: 'right', mobile: 'hide' },
       },
     ],
     [],

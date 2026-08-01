@@ -20,16 +20,25 @@ export interface TabsProps {
 export function Tabs({ tabs, value, onValueChange, className }: TabsProps) {
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange}>
-      <RadixTabs.List className={cn('flex gap-6 border-b border-hairline', className)}>
+      {/* Four-plus tabs don't fit a phone at desktop spacing, and wrapping them
+          breaks the underline rail — scroll the strip instead. */}
+      <RadixTabs.List
+        className={cn(
+          'flex gap-5 overflow-x-auto scrollbar-none border-b border-hairline',
+          'md:gap-6 md:overflow-visible',
+          className,
+        )}
+      >
         {tabs.map((tab) => (
           <RadixTabs.Trigger
             key={tab.value}
             value={tab.value}
             className={cn(
-              'relative -mb-px py-2.5 text-sm text-muted transition-colors hover:text-ink',
+              'relative -mb-px shrink-0 whitespace-nowrap py-3 text-sm text-muted transition-colors',
+              'touch-manipulation hover:text-ink',
               'data-[state=active]:text-ink data-[state=active]:font-medium',
               'data-[state=active]:border-b-2 data-[state=active]:border-primary',
-              'focus-visible:outline-none',
+              'focus-visible:outline-none md:py-2.5',
             )}
           >
             {tab.label}

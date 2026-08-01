@@ -17,8 +17,12 @@ function currentTheme(): Theme {
   return attr === 'dark' || attr === 'light' ? attr : systemTheme();
 }
 
-/** Persisted light/dark switch. Writes `data-theme` on <html> and localStorage. */
-export function ThemeToggle() {
+/**
+ * Persisted light/dark switch. Writes `data-theme` on <html> and localStorage.
+ * Extracted from the button so the mobile More sheet can present the same
+ * state as a full-width row rather than a tooltipped icon.
+ */
+export function useThemeToggle() {
   const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -38,8 +42,13 @@ export function ThemeToggle() {
     }
   }
 
-  // Keep icon stable until mounted to avoid a hydration mismatch.
-  const isDark = mounted && theme === 'dark';
+  // Keep the reported theme stable until mounted to avoid a hydration mismatch.
+  return { isDark: mounted && theme === 'dark', toggle };
+}
+
+/** Icon button form of the theme switch (desktop topbar). */
+export function ThemeToggle() {
+  const { isDark, toggle } = useThemeToggle();
 
   return (
     <Tooltip content={isDark ? 'Light mode' : 'Dark mode'} side="bottom">

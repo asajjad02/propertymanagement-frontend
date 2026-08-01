@@ -54,7 +54,7 @@ export function PasswordSection() {
           </Field>
           {error && <p className="text-sm text-danger">{error}</p>}
           <div className="pt-1">
-            <Button type="submit" disabled={submit.isPending || !current || !next}>Update password</Button>
+            <Button type="submit" loading={submit.isPending} disabled={submit.isPending || !current || !next}>Update password</Button>
           </div>
         </form>
       </CardBody>

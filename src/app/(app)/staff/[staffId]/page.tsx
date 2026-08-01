@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AttendanceSection } from '@/components/staff/attendance-section';
 import { SalarySection } from '@/components/staff/salary-section';
 import { StaffActions } from '@/components/staff/staff-actions';
@@ -10,7 +11,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { DetailHeader } from '@/components/ui/detail-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { InfoCard } from '@/components/ui/info-card';
-import { LoadingBlock } from '@/components/ui/spinner';
+import { DetailSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Tabs } from '@/components/ui/tabs';
 import { staffMemberHooks } from '@/hooks/resources';
@@ -28,11 +29,21 @@ export default function StaffDetailPage() {
   const { data: staff, isPending } = staffMemberHooks.useItem(staffId);
   const [tab, setTab] = useState('profile');
 
-  if (isPending) return <LoadingBlock />;
+  if (isPending) {
+    // Keep the app bar (back chevron + where you are) while the record
+    // loads, then a placeholder shaped like the page that follows.
+    return (
+      <>
+        <PageChrome title="Staff member" backHref="/staff" />
+        <DetailSkeleton />
+      </>
+    );
+  }
   if (!staff) return <EmptyState title="Staff member not found" description="They may have been removed." />;
 
   return (
     <div className="space-y-6">
+      <PageChrome title={staff.full_name} backHref="/staff" />
       <DetailHeader
         backHref="/staff"
         backLabel="All staff"

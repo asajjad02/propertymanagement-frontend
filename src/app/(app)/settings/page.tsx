@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AccountSection } from '@/components/settings/account-section';
 import { AppearanceSection } from '@/components/settings/appearance-section';
 import { PasswordSection } from '@/components/settings/password-section';
@@ -24,6 +25,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Settings" />
       <PageHeader title="Settings" subtitle="Your profile, security, appearance, and account." />
       <Tabs tabs={tabs} value={tab} onValueChange={setTab} />
       <div className="max-w-3xl">

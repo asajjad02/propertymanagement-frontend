@@ -20,7 +20,7 @@ export function CheckoutButton({ visitorId, visitorName }: { visitorId: number; 
     <Button
       variant="secondary"
       size="sm"
-      disabled={patch.isPending}
+      loading={patch.isPending} disabled={patch.isPending}
       onClick={(e) => {
         e.stopPropagation();
         patch.mutate(

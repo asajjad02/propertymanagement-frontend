@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Info } from 'lucide-react';
 import { useMemo } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AddTeamMemberButton } from '@/components/team/add-team-member-button';
 import { TeamActions } from '@/components/team/team-actions';
 import { Avatar } from '@/components/ui/avatar';
@@ -75,6 +76,7 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Team" />
       <PageHeader
         title="Team"
         subtitle="People who can log in to this account, and what they can do."

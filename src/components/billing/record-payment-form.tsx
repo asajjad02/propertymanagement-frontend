@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
@@ -60,7 +61,7 @@ export function RecordPaymentForm({
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Amount" required>
-          {(id) => <Input id={id} type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />}
+          {(id) => <Input inputMode="decimal" id={id} type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />}
         </Field>
         <Field label="Payment date" required>
           {(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />}
@@ -71,15 +72,15 @@ export function RecordPaymentForm({
           {(id) => <Select id={id} value={method} onValueChange={setMethod} options={METHODS} className="w-full" />}
         </Field>
         <Field label="Reference #" hint="Optional">
-          {(id) => <Input id={id} value={reference} onChange={(e) => setReference(e.target.value)} />}
+          {(id) => <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false} id={id} value={reference} onChange={(e) => setReference(e.target.value)} />}
         </Field>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={create.isPending || !amount}>Record payment</Button>
-      </div>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={create.isPending} disabled={create.isPending || !amount}>Record payment</Button>
+      </FormActions>
     </form>
   );
 }

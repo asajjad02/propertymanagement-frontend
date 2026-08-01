@@ -24,6 +24,7 @@ export function OwnersTable({
       {
         id: 'name',
         header: 'Owner',
+        meta: { mobile: 'primary', mobileCell: (r) => r.name },
         accessorFn: (r) => r.name,
         cell: (c) => (
           <div className="flex items-center gap-3">
@@ -35,6 +36,13 @@ export function OwnersTable({
       {
         id: 'flats',
         header: 'Flats owned',
+        meta: {
+          mobile: 'secondary',
+          mobileCell: (r) =>
+            r.ownedFlats.length === 0
+              ? 'No flats'
+              : `${r.ownedFlats.length} ${r.ownedFlats.length === 1 ? 'flat' : 'flats'} · ${r.ownedFlats.slice(0, 3).join(', ')}`,
+        },
         accessorFn: (r) => r.ownedFlats.length,
         cell: (c) => {
           const flats = c.row.original.ownedFlats;
@@ -49,11 +57,12 @@ export function OwnersTable({
           );
         },
       },
-      { header: 'Contact', accessorFn: (r) => r.phone || '—' },
-      { header: 'CNIC', accessorFn: (r) => r.cnic || '—' },
+      { header: 'Contact', accessorFn: (r) => r.phone || '—', meta: { mobile: 'caption' } },
+      { header: 'CNIC', accessorFn: (r) => r.cnic || '—', meta: { mobile: 'hide' } },
       {
         id: 'status',
         header: 'Status',
+        meta: { mobile: 'status' },
         accessorFn: (r) => r.owner.status,
         cell: (c) => <StatusBadge status={c.getValue<string>()} />,
       },
@@ -61,7 +70,7 @@ export function OwnersTable({
         id: 'chevron',
         header: '',
         cell: () => <ChevronRight className="h-4 w-4 text-faint" />,
-        meta: { align: 'right' },
+        meta: { align: 'right', mobile: 'hide' },
       },
     ],
     [],

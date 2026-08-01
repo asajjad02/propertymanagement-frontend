@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
@@ -97,10 +98,10 @@ export function AttendanceSection({ staffId }: { staffId: number }) {
           </div>
           <Field label="Notes">{(id) => <Input id={id} value={form.notes} onChange={set('notes')} />}</Field>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending}>Save</Button>
-          </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)} className="hidden md:inline-flex">Cancel</Button>
+            <Button type="submit" loading={create.isPending} disabled={create.isPending}>Save</Button>
+          </FormActions>
         </form>
       </Modal>
     </Card>

@@ -7,10 +7,12 @@ import { useMemo, useState } from 'react';
 import { bulkCreateFlats } from '@/api/endpoints';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
+import { Segmented } from '@/components/ui/segmented';
 import { useApartmentTypesLookup } from '@/hooks/use-lookups';
 import { queryKeys } from '@/lib/query-keys';
 import { toApiError } from '@/lib/errors';
@@ -82,12 +84,13 @@ export function BulkAddFlatsButton() {
         description="Stand up many flats at once. Paste one flat number per line — duplicates are skipped."
       >
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Apartment type" hint={typeOptions.length === 0 ? 'Add types in Configuration' : undefined}>
               {(id) => <Select id={id} value={apartmentType || undefined} onValueChange={setApartmentType} options={typeOptions} placeholder="Select type" className="w-full" />}
             </Field>
             <Field label="Occupancy">
-              {(id) => <Select id={id} value={occupancy} onValueChange={(v) => setOccupancy(v as OccupancyStatus)} options={OCCUPANCY} className="w-full" />}
+              {/* Two states — show both rather than hiding one behind a tap. */}
+              {(id) => <Segmented id={id} options={OCCUPANCY} value={occupancy} onValueChange={(v) => setOccupancy(v as OccupancyStatus)} />}
             </Field>
           </div>
           <Field label="Flat numbers" hint={`One per line${flatNumbers.length ? ` · ${flatNumbers.length} flats` : ''}`}>
@@ -102,12 +105,12 @@ export function BulkAddFlatsButton() {
             )}
           </Field>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending || flatNumbers.length === 0}>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)} className="hidden md:inline-flex">Cancel</Button>
+            <Button type="submit" loading={create.isPending} disabled={create.isPending || flatNumbers.length === 0}>
               Add {flatNumbers.length || ''} flats
             </Button>
-          </div>
+          </FormActions>
         </form>
       </Modal>
     </>

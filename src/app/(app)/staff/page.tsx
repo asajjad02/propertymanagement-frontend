@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AddStaffButton } from '@/components/staff/add-staff-button';
 import { StaffTable } from '@/components/staff/staff-table';
 import { Card } from '@/components/ui/card';
@@ -48,6 +49,7 @@ export default function StaffListPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Staff" />
       <PageHeader title="Staff" subtitle="Employees on the society payroll." actions={<AddStaffButton />} />
 
       <StatCardRow>

@@ -30,17 +30,19 @@ export function Pagination({ page, pageSize, total, onPageChange, className }: P
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 border-t border-hairline px-4 py-3',
+        'flex items-center justify-between gap-3 border-t border-hairline px-3 py-2.5 md:px-4 md:py-3',
         className,
       )}
     >
-      <p className="label-mono normal-case tracking-normal">
+      {/* The "X–Y of N" range is the first thing to go when width is scarce —
+          the page counter beside the arrows already carries position. */}
+      <p className="label-mono hidden normal-case tracking-normal sm:block">
         <span className="tabular-nums text-ink-secondary">
           {from}–{to}
         </span>{' '}
         of <span className="tabular-nums text-ink-secondary">{total}</span>
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-end">
         <PageButton
           label="Previous page"
           disabled={page <= 1}
@@ -48,7 +50,7 @@ export function Pagination({ page, pageSize, total, onPageChange, className }: P
         >
           <ChevronLeft className="h-4 w-4" />
         </PageButton>
-        <span className="px-2 text-xs text-muted tabular-nums">
+        <span className="px-2 text-sm text-muted tabular-nums md:text-xs">
           Page {page} / {pages}
         </span>
         <PageButton
@@ -80,7 +82,11 @@ function PageButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="rounded-control border border-hairline bg-surface p-1.5 text-muted transition-colors hover:border-muted/40 hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+      className={cn(
+        'flex h-11 w-11 items-center justify-center rounded-control border border-hairline bg-surface',
+        'text-muted transition-colors touch-manipulation hover:border-muted/40 hover:text-ink',
+        'disabled:pointer-events-none disabled:opacity-40 md:h-8 md:w-8',
+      )}
     >
       {children}
     </button>

@@ -3,8 +3,10 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
@@ -56,6 +58,7 @@ export function AddTeamMemberButton() {
         <Plus className="h-4 w-4" />
         Add teammate
       </Button>
+      <AppBarAction icon={Plus} label="Add teammate" onClick={() => setOpen(true)} />
       <Modal
         open={open}
         onOpenChange={(o) => {
@@ -78,10 +81,10 @@ export function AddTeamMemberButton() {
             )}
           </Field>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending || !username || !email}>Add teammate</Button>
-          </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)} className="hidden md:inline-flex">Cancel</Button>
+            <Button type="submit" loading={create.isPending} disabled={create.isPending || !username || !email}>Add teammate</Button>
+          </FormActions>
         </form>
       </Modal>
     </>

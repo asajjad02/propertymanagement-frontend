@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { PersonSelect } from '@/components/people/person-select';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Modal } from '@/components/ui/modal';
 import { useAssignOwner } from '@/hooks/use-flat-assignments';
 import { toApiError } from '@/lib/errors';
@@ -42,10 +43,10 @@ export function AssignOwnerDialog({
           {(id) => <PersonSelect id={id} value={person || undefined} onValueChange={setPerson} />}
         </Field>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" disabled={assign.isPending || !person}>Assign owner</Button>
-        </div>
+        <FormActions>
+          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="hidden md:inline-flex">Cancel</Button>
+          <Button type="submit" loading={assign.isPending} disabled={assign.isPending || !person}>Assign owner</Button>
+        </FormActions>
       </form>
     </Modal>
   );

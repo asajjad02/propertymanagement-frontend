@@ -62,20 +62,37 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-24 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 rounded-card border border-hairline bg-surface shadow-pop focus:outline-none">
+        {/* Full-screen search on mobile — a 390px-wide floating panel with the
+            keyboard up leaves room for about two results. Desktop keeps the
+            floating palette. */}
+        <Dialog.Content
+          className={cn(
+            'fixed inset-0 z-50 flex flex-col bg-surface focus:outline-none',
+            'md:inset-auto md:left-1/2 md:top-24 md:h-auto md:w-[calc(100vw-2rem)] md:max-w-md',
+            'md:-translate-x-1/2 md:rounded-card md:border md:border-hairline md:shadow-pop',
+          )}
+        >
           <VisuallyHidden><Dialog.Title>Search</Dialog.Title></VisuallyHidden>
-          <div className="flex items-center gap-2 border-b border-hairline px-4">
-            <Search className="h-4 w-4 text-faint" />
+          <div className="flex shrink-0 items-center gap-2 border-b border-hairline px-4 pt-safe">
+            <Search className="h-4 w-4 shrink-0 text-faint" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search flats, residents, bills… or jump to a page"
-              className="h-11 w-full bg-transparent text-sm text-ink placeholder:text-faint focus:outline-none"
+              placeholder="Search flats, residents, bills…"
+              // text-base on mobile prevents iOS focus-zoom.
+              className="h-14 w-full bg-transparent text-base text-ink placeholder:text-faint focus:outline-none md:h-11 md:text-sm"
             />
+            <button
+              type="button"
+              onClick={() => handleOpenChange(false)}
+              className="shrink-0 px-1 text-sm text-muted transition-colors active:text-ink md:hidden"
+            >
+              Cancel
+            </button>
           </div>
 
-          <div className="max-h-80 overflow-y-auto p-1.5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 pb-safe md:max-h-80 md:flex-none">
             {/* Record results */}
             {showRecords && (
               <>
@@ -92,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                     <button
                       key={`${r.type}-${r.id}`}
                       onClick={() => go(meta.href(r.id))}
-                      className="flex w-full items-center gap-2.5 rounded-control px-3 py-2 text-left hover:bg-raised"
+                      className="flex w-full items-center gap-2.5 rounded-control px-3 py-3 text-left transition-colors active:bg-raised hover:bg-raised md:py-2"
                     >
                       <Icon className="h-4 w-4 shrink-0 text-muted" />
                       <span className="min-w-0 flex-1">
@@ -114,7 +131,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <button
                     key={item.href}
                     onClick={() => go(item.href)}
-                    className="flex w-full items-center gap-2.5 rounded-control px-3 py-2 text-left text-sm text-ink hover:bg-raised"
+                    className="flex w-full items-center gap-2.5 rounded-control px-3 py-3 text-left text-base text-ink transition-colors active:bg-raised hover:bg-raised md:py-2 md:text-sm"
                   >
                     <item.icon className="h-4 w-4 text-muted" />
                     {item.label}

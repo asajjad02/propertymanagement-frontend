@@ -1,7 +1,5 @@
 import { BillingDocList } from '@/components/billing/billing-doc-list';
 import { billsToDocItems } from '@/components/billing/to-doc-items';
-import { DepositCard } from '@/components/inspections/deposit-card';
-import { InspectionsCard } from '@/components/inspections/inspections-card';
 import { Card, CardBody } from '@/components/ui/card';
 import { InfoCard } from '@/components/ui/info-card';
 import { LoadingBlock } from '@/components/ui/spinner';
@@ -19,8 +17,22 @@ export function FlatOverview({ detail }: { detail: FlatDetail }) {
   if (!flat) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_1fr]">
-      <div className="space-y-6">
+    /*
+     * The account summary is the aside on desktop but comes *first* on mobile:
+     * "what do they owe" is the question this screen mostly gets opened to
+     * answer, and as the last block in a single column it sat several screens
+     * down behind property details, people and vehicles.
+     */
+    <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-[1.55fr_1fr]">
+      {/*
+       * `contents` dissolves these two wrappers on mobile so every card becomes
+       * a direct grid item and can be ordered individually — the summary first,
+       * recent bills last, everything else in between. Promoting the whole
+       * aside instead would drag an empty "Recent bills" block to the top of
+       * the screen. At `lg` the wrappers return and the two-column layout is
+       * exactly as it was.
+       */}
+      <div className="contents *:order-2 lg:block lg:space-y-6">
         <InfoCard
           title="Property details"
           fields={[
@@ -37,17 +49,26 @@ export function FlatOverview({ detail }: { detail: FlatDetail }) {
           activeOccupantId={activeOccupantId}
         />
         <VehicleList vehicles={vehicles} />
-        <InspectionsCard flatId={flat.id} occupantId={activeOccupantId} />
-        <DepositCard flatId={flat.id} occupantId={activeOccupantId} />
       </div>
 
-      <div className="space-y-6">
+      <div className="contents lg:block lg:space-y-6">
         {billsLoading ? (
-          <Card><CardBody><LoadingBlock label="Loading account…" /></CardBody></Card>
+          <Card className="order-1"><CardBody><LoadingBlock label="Loading account…" /></CardBody></Card>
         ) : (
           <>
-            <AccountSummary outstanding={outstanding} billCount={bills.length} chargeCount={charges.length} />
-            <BillingDocList title="Recent bills" items={billsToDocItems(bills).slice(0, 5)} emptyLabel="No bills yet" />
+            {/* "What do they owe" — the question this screen gets opened to answer. */}
+            <AccountSummary
+              className="order-1"
+              outstanding={outstanding}
+              billCount={bills.length}
+              chargeCount={charges.length}
+            />
+            <BillingDocList
+              className="order-3"
+              title="Recent bills"
+              items={billsToDocItems(bills).slice(0, 5)}
+              emptyLabel="No bills yet"
+            />
           </>
         )}
       </div>

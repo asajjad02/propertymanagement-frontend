@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AddResidentButton } from '@/components/residents/add-resident-button';
 import { ResidentsTable } from '@/components/residents/residents-table';
 import { Card } from '@/components/ui/card';
@@ -46,6 +47,7 @@ export default function ResidentsListPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Residents" />
       <PageHeader
         title="Residents"
         subtitle="Owners and tenants across your society."

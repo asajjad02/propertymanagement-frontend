@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -21,6 +22,7 @@ export function AddResidentButton() {
         <Plus className="h-4 w-4" />
         Add Resident
       </Button>
+      <AppBarAction icon={Plus} label="Add Resident" onClick={() => setOpen(true)} />
       <PersonFormDialog open={open} onOpenChange={setOpen} />
     </>
   );

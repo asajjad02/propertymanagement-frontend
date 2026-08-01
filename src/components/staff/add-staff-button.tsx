@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -19,6 +20,7 @@ export function AddStaffButton() {
         <Plus className="h-4 w-4" />
         Add staff
       </Button>
+      <AppBarAction icon={Plus} label="Add staff" onClick={() => setOpen(true)} />
       <StaffFormDialog open={open} onOpenChange={setOpen} />
     </>
   );

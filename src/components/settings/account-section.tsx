@@ -61,10 +61,10 @@ export function AccountSection() {
               {(id) => <Input id={id} value={form.name} onChange={set('name')} required />}
             </Field>
             <Field label="Contact person">
-              {(id) => <Input id={id} value={form.contact_person} onChange={set('contact_person')} />}
+              {(id) => <Input autoCapitalize="words" id={id} value={form.contact_person} onChange={set('contact_person')} />}
             </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Phone">{(id) => <Input id={id} value={form.phone} onChange={set('phone')} />}</Field>
+              <Field label="Phone">{(id) => <Input type="tel" inputMode="tel" autoComplete="off" id={id} value={form.phone} onChange={set('phone')} />}</Field>
               <Field label="Email">{(id) => <Input id={id} type="email" value={form.email} onChange={set('email')} />}</Field>
             </div>
             <Field label="Address">
@@ -72,7 +72,7 @@ export function AccountSection() {
             </Field>
             {error && <p className="text-sm text-danger">{error}</p>}
             <div className="pt-1">
-              <Button type="submit" disabled={save.isPending || !form.name}>Save settings</Button>
+              <Button type="submit" loading={save.isPending} disabled={save.isPending || !form.name}>Save settings</Button>
             </div>
           </form>
         )}

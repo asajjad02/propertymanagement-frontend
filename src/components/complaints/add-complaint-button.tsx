@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/providers/auth-provider';
@@ -22,6 +23,7 @@ export function AddComplaintButton() {
         <Plus className="h-4 w-4" />
         Log Complaint
       </Button>
+      <AppBarAction icon={Plus} label="Log Complaint" onClick={() => setOpen(true)} />
       <Modal open={open} onOpenChange={setOpen} title="Log complaint" description="Record a new complaint for a flat.">
         <ComplaintForm onDone={() => setOpen(false)} />
       </Modal>

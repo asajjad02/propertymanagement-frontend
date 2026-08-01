@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { uploadDocument } from '@/api/documents';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { ImageUploader } from '@/components/ui/image-uploader';
 import { Segmented } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
@@ -106,12 +107,12 @@ export function ComplaintForm({ onDone }: { onDone: () => void }) {
       </Field>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
         <Button type="submit" disabled={busy || !flat || !type || !description}>
           {createdId != null ? 'Retry photo upload' : 'Log complaint'}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 }

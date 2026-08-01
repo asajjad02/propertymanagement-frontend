@@ -27,10 +27,17 @@ export function ComplaintsTable({
 }) {
   const columns = useMemo<ColumnDef<ComplaintRow, unknown>[]>(
     () => [
-      { header: 'Type', accessorFn: (r) => r.complaint.complaint_type, cell: (c) => (
-        <span className="font-medium text-ink">{c.getValue<string>()}</span>
-      ) },
-      { header: 'Flat', accessorFn: (r) => r.flatNumber },
+      {
+        header: 'Type',
+        accessorFn: (r) => r.complaint.complaint_type,
+        cell: (c) => <span className="font-medium text-ink">{c.getValue<string>()}</span>,
+        meta: { mobile: 'primary' },
+      },
+      {
+        header: 'Flat',
+        accessorFn: (r) => r.flatNumber,
+        meta: { mobile: 'secondary', mobileCell: (r) => `Flat ${r.flatNumber}` },
+      },
       {
         id: 'priority',
         header: 'Priority',
@@ -44,20 +51,26 @@ export function ComplaintsTable({
       {
         header: 'Description',
         accessorFn: (r) => r.complaint.description,
+        // The full text is a tap away on the complaint itself.
+        meta: { mobile: 'hide' },
         cell: (c) => <span className="block max-w-xs truncate text-muted">{c.getValue<string>()}</span>,
       },
-      { header: 'Assigned', accessorFn: (r) => r.staffName ?? 'Unassigned' },
+      {
+        header: 'Assigned',
+        accessorFn: (r) => r.staffName ?? 'Unassigned',
+        meta: { mobile: 'caption', mobileCell: (r) => r.staffName ?? 'Unassigned' },
+      },
       {
         id: 'reported_at',
         header: 'Reported',
         accessorFn: (r) => shortDate(r.complaint.reported_at),
-        meta: { sortable: true },
+        meta: { sortable: true, mobile: 'secondary' },
       },
       {
         header: 'Status',
         accessorFn: (r) => r.complaint.status,
         cell: (c) => <StatusBadge status={c.getValue<string>()} />,
-        meta: { align: 'right' },
+        meta: { align: 'right', mobile: 'status' },
       },
     ],
     [],

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AddComplaintButton } from '@/components/complaints/add-complaint-button';
 import { ComplaintDetailDialog } from '@/components/complaints/complaint-detail-dialog';
 import { ComplaintsTable } from '@/components/complaints/complaints-table';
@@ -112,6 +113,7 @@ export default function ComplaintsPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Complaints" />
       <PageHeader
         title="Complaints"
         subtitle="Resident complaints, assignment, and resolution."

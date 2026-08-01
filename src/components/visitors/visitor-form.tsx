@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Select } from '@/components/ui/select';
@@ -112,7 +113,7 @@ export function VisitorForm({ onDone }: { onDone: () => void }) {
       </Field>
       <Field label="Visitor name" required>
         {(id) => (
-          <Input
+          <Input autoCapitalize="words"
             id={id}
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -126,7 +127,7 @@ export function VisitorForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <Field label="Contact number">
           {(id) => (
-            <Input
+            <Input type="tel" autoComplete="off"
               id={id}
               value={contact}
               inputMode="tel"
@@ -137,13 +138,13 @@ export function VisitorForm({ onDone }: { onDone: () => void }) {
         </Field>
         <Field label="CNIC">
           {(id) => (
-            <Input id={id} value={cnic} onChange={(e) => setCnic(e.target.value)} className={GATE_CONTROL} />
+            <Input inputMode="numeric" id={id} value={cnic} onChange={(e) => setCnic(e.target.value)} className={GATE_CONTROL} />
           )}
         </Field>
       </div>
       <Field label="Host name">
         {(id) => (
-          <Input id={id} value={host} onChange={(e) => setHost(e.target.value)} className={GATE_CONTROL} />
+          <Input autoCapitalize="words" id={id} value={host} onChange={(e) => setHost(e.target.value)} className={GATE_CONTROL} />
         )}
       </Field>
 
@@ -163,7 +164,7 @@ export function VisitorForm({ onDone }: { onDone: () => void }) {
         </Field>
         <Field label="Registration">
           {(id) => (
-            <Input
+            <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false}
               id={id}
               value={registration}
               placeholder="e.g. LEA-1234"
@@ -175,14 +176,14 @@ export function VisitorForm({ onDone }: { onDone: () => void }) {
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
+      <FormActions>
         <Button type="button" variant="secondary" onClick={onDone} className="h-12 px-5 text-base">
           Cancel
         </Button>
         <Button type="submit" disabled={submitting || !flat || !name} className="h-12 px-6 text-base">
           Log visitor
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 }

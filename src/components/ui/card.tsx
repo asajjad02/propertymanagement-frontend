@@ -1,19 +1,61 @@
 import { cn } from '@/lib/cn';
 
-/** White surface with a hairline border and card radius. The workhorse container. */
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Keep the bordered, rounded box on mobile too.
+   *
+   * Almost nothing should. Reach for it only when a panel genuinely has to read
+   * as a discrete object floating among others — not for the normal case of a
+   * section of a page.
+   */
+  boxed?: boolean;
+}
+
+/**
+ * A section of content. Bordered card at `md` and up; a full-bleed band on
+ * mobile.
+ *
+ * A rounded, bordered box inside a 16px page gutter is desktop furniture: on a
+ * phone it's a frame around a frame, it costs 32px of width, and a column of
+ * them turns a screen into a stack of floating boxes instead of a document. So
+ * below `md` the side borders and the radius go and the section runs edge to
+ * edge.
+ *
+ * Only a **bottom** hairline survives. `--paper` (#fbfbfc) and `--surface`
+ * (#ffffff) differ by about 1.5%, so the page showing through the gap between
+ * two sections is invisible — with a border on both edges that gap read as an
+ * empty band ruled top and bottom. With one divider per section the gap merges
+ * into a continuous field and the sections read as a document, which is also
+ * why the page-level `space-y` doesn't need to change.
+ */
+export function Card({ className, boxed = false, ...props }: CardProps) {
   return (
     <div
-      className={cn('bg-surface border border-hairline rounded-card', className)}
+      className={cn(
+        'bg-surface border-hairline',
+        boxed
+          ? 'rounded-card border'
+          : '-mx-4 border-b md:mx-0 md:rounded-card md:border',
+        className,
+      )}
       {...props}
     />
   );
 }
 
+/**
+ * The section's label. On mobile it reads as a heading over the rows below —
+ * no divider under it, because a rule there is what makes the group look like
+ * a titled card rather than a section of the page.
+ */
 export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('px-5 py-4 border-b border-hairline flex items-center justify-between gap-3', className)}
+      className={cn(
+        'flex items-center justify-between gap-3 px-4 pb-1.5 pt-3.5',
+        'md:border-b md:border-hairline md:px-5 md:py-4',
+        className,
+      )}
       {...props}
     />
   );
@@ -24,5 +66,5 @@ export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHead
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('p-5', className)} {...props} />;
+  return <div className={cn('px-4 py-3 md:p-5', className)} {...props} />;
 }

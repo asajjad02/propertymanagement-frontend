@@ -34,22 +34,28 @@ export function ResidentsTable({
             <span className="font-medium text-ink">{c.getValue<string>()}</span>
           </div>
         ),
-        meta: { sortable: true, sortField: 'full_name' },
+        // The desktop cell carries an avatar; the card wants just the name.
+        meta: { sortable: true, sortField: 'full_name', mobile: 'primary', mobileCell: (r) => r.person.full_name },
       },
       {
         id: 'role',
         header: 'Role',
         accessorFn: (r) => r.role ?? '',
         cell: (c) => <RoleBadge role={c.row.original.role} />,
+        meta: { mobile: 'status' },
       },
-      { header: 'Flat', accessorFn: (r) => r.flatNumber ?? '—' },
-      { header: 'Contact', accessorFn: (r) => r.person.phone || '—' },
-      { header: 'CNIC', accessorFn: (r) => r.person.cnic || '—' },
+      {
+        header: 'Flat',
+        accessorFn: (r) => r.flatNumber ?? '—',
+        meta: { mobile: 'secondary', mobileCell: (r) => (r.flatNumber ? `Flat ${r.flatNumber}` : 'No flat') },
+      },
+      { header: 'Contact', accessorFn: (r) => r.person.phone || '—', meta: { mobile: 'caption' } },
+      { header: 'CNIC', accessorFn: (r) => r.person.cnic || '—', meta: { mobile: 'hide' } },
       {
         id: 'chevron',
         header: '',
         cell: () => <ChevronRight className="h-4 w-4 text-faint" />,
-        meta: { align: 'right' },
+        meta: { align: 'right', mobile: 'hide' },
       },
     ],
     [],

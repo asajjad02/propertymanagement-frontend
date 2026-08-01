@@ -20,19 +20,26 @@ export function BillingDocList({
   title,
   items,
   emptyLabel = 'No records',
+  className,
 }: {
   title: string;
   items: BillingDocItem[];
   emptyLabel?: string;
+  className?: string;
 }) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <span className="label-mono">{items.length}</span>
       </CardHeader>
       {items.length === 0 ? (
-        <EmptyState icon={FileText} title={emptyLabel} className="py-8" />
+        // A section with nothing in it earns one quiet line on a phone, not the
+        // full illustrated empty state.
+        <p className="px-5 py-4 text-sm text-muted sm:hidden">{emptyLabel}</p>
+      ) : null}
+      {items.length === 0 ? (
+        <EmptyState icon={FileText} title={emptyLabel} className="hidden py-8 sm:flex" />
       ) : (
         <ul className="divide-y divide-hairline">
           {items.map((item) => {

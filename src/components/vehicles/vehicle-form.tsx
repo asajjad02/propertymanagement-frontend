@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { vehicleHooks } from '@/hooks/resources';
@@ -62,18 +63,18 @@ export function VehicleForm({
           )}
         </Field>
         <Field label="Registration #">
-          {(id) => <Input id={id} value={registration} onChange={(e) => setRegistration(e.target.value)} />}
+          {(id) => <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false} id={id} value={registration} onChange={(e) => setRegistration(e.target.value)} />}
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Color">{(id) => <Input id={id} value={color} onChange={(e) => setColor(e.target.value)} />}</Field>
-        <Field label="Parking slot">{(id) => <Input id={id} value={slot} onChange={(e) => setSlot(e.target.value)} />}</Field>
+        <Field label="Parking slot">{(id) => <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false} id={id} value={slot} onChange={(e) => setSlot(e.target.value)} />}</Field>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={pending}>{vehicle ? 'Save changes' : 'Add vehicle'}</Button>
-      </div>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={pending} disabled={pending}>{vehicle ? 'Save changes' : 'Add vehicle'}</Button>
+      </FormActions>
     </form>
   );
 }

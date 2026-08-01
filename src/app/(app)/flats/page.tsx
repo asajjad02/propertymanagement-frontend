@@ -4,25 +4,23 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { AddFlatButton } from '@/components/flats/add-flat-button';
-import { FlatsTable } from '@/components/flats/flats-table';
+import { FLAT_SORT_OPTIONS, FlatsTable } from '@/components/flats/flats-table';
+import { PageChrome } from '@/components/shell/page-chrome';
 import { Card } from '@/components/ui/card';
-import { FilterBar } from '@/components/ui/filter-bar';
 import { FilterChips, type FilterChip } from '@/components/ui/filter-chips';
+import { FilterSheet } from '@/components/ui/filter-sheet';
+import { ListToolbar } from '@/components/ui/list-toolbar';
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
 import { Segmented } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
+import { StatCardSkeleton } from '@/components/ui/skeleton';
+import { SortControl } from '@/components/ui/sort-control';
 import { StatCard, StatCardRow } from '@/components/ui/stat-card';
 import { useFlatRows } from '@/hooks/use-flat-rows';
 import { useFlatStats } from '@/hooks/use-flat-stats';
 import { useTableQuery } from '@/hooks/use-table-query';
-
-const OCCUPANCY_TABS = [
-  { value: 'all', label: 'All' },
-  { value: 'occupied', label: 'Occupied' },
-  { value: 'vacant', label: 'Vacant' },
-];
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
@@ -34,17 +32,34 @@ const TYPE_OPTIONS = [
 ];
 
 const PAGE_SIZE = 20;
+const DEFAULT_ORDERING = 'flat_number';
 
 export default function FlatsListPage() {
   const router = useRouter();
   const q = useTableQuery({
     key: 'flats',
     filterKeys: ['occupancy_status', 'flat_type'],
-    defaultOrdering: 'flat_number',
+    defaultOrdering: DEFAULT_ORDERING,
   });
 
   const stats = useFlatStats();
   const { rows, count, isLoading } = useFlatRows(q.listParams);
+
+  /*
+   * The occupancy segments carry the same three numbers the stat tiles do, so
+   * on mobile the tiles are dropped entirely and these counts stand in — same
+   * information, one row instead of four, and each number is a filter.
+   */
+  const occupancyTabs = useMemo(
+    () => [
+      // No counts until they're real — flashing 0 → 19 reads as data, not as
+      // loading, and it's the number the user is here to check.
+      { value: 'all', label: 'All', count: stats.isLoading ? undefined : stats.total },
+      { value: 'occupied', label: 'Occupied', count: stats.isLoading ? undefined : stats.occupied },
+      { value: 'vacant', label: 'Vacant', count: stats.isLoading ? undefined : stats.vacant },
+    ],
+    [stats.isLoading, stats.total, stats.occupied, stats.vacant],
+  );
 
   const chips = useMemo<FilterChip[]>(() => {
     const list: FilterChip[] = [];
@@ -59,44 +74,65 @@ export default function FlatsListPage() {
   }, [q]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Flats"
-        subtitle="Units in your account."
-        actions={<AddFlatButton />}
-      />
+    <div className="space-y-4 md:space-y-6">
+      <PageChrome title="Flats" />
+      {/* Desktop-only; below `lg` the app bar shows the title, and AddFlatButton
+          registers its own action there. */}
+      <PageHeader title="Flats" subtitle="Units in your account." actions={<AddFlatButton />} />
 
-      <StatCardRow>
-        <StatCard label="Total flats" value={stats.total} />
-        <StatCard label="Occupied" value={stats.occupied} tone="green" />
-        <StatCard label="Vacant" value={stats.vacant} tone="neutral" />
+      {/* Redundant with the segment counts on a phone — desktop only. */}
+      <StatCardRow className="hidden md:grid">
+        {stats.isLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard label="Total flats" value={stats.total} />
+            <StatCard label="Occupied" value={stats.occupied} tone="green" />
+            <StatCard label="Vacant" value={stats.vacant} tone="neutral" />
+          </>
+        )}
       </StatCardRow>
 
       <Card>
-        <div className="space-y-3 border-b border-hairline p-4">
-          <FilterBar
-            left={
-              <Segmented
-                options={OCCUPANCY_TABS}
-                value={q.filters.occupancy_status ?? 'all'}
-                onValueChange={(v) => q.setFilter('occupancy_status', v === 'all' ? undefined : v)}
-              />
-            }
-            right={
-              <>
+        {/* Direct child of Card on purpose: the toolbar is sticky, and a sticky
+            element only stays pinned while its containing block is on screen. */}
+        <ListToolbar
+          segments={
+            <Segmented
+              options={occupancyTabs}
+              value={q.filters.occupancy_status ?? 'all'}
+              onValueChange={(v) => q.setFilter('occupancy_status', v === 'all' ? undefined : v)}
+            />
+          }
+          search={
+            <SearchInput value={q.search} onChange={q.setSearch} placeholder="Search flats…" />
+          }
+          actions={
+            <>
+              <FilterSheet activeCount={q.activeFilterCount} onClearAll={q.clearFilters}>
                 <Select
                   value={q.filters.flat_type ?? 'all'}
                   onValueChange={(v) => q.setFilter('flat_type', v === 'all' ? undefined : v)}
                   options={TYPE_OPTIONS}
                 />
-                <SearchInput
-                  value={q.search}
-                  onChange={q.setSearch}
-                  placeholder="Search flat number…"
-                />
-              </>
-            }
-          />
+              </FilterSheet>
+              <SortControl
+                options={FLAT_SORT_OPTIONS}
+                ordering={q.ordering}
+                onOrderingChange={q.setOrdering}
+                defaultOrdering={DEFAULT_ORDERING}
+                className="md:hidden"
+              />
+            </>
+          }
+        />
+        {/* Active-filter chips are a desktop affordance; mobile shows the count
+            on the filter button instead. */}
+        <div className="hidden px-4 pb-4 md:block">
           <FilterChips chips={chips} onClearAll={q.clearFilters} />
         </div>
         <FlatsTable
@@ -105,6 +141,8 @@ export default function FlatsListPage() {
           ordering={q.ordering}
           onOrderingChange={q.setOrdering}
           onRowClick={(row) => router.push(`/flats/${row.flat.id}`)}
+          // Sorting lives in the toolbar above; don't spend a row repeating it.
+          mobileSort={false}
         />
         <Pagination page={q.page} pageSize={PAGE_SIZE} total={count} onPageChange={q.setPage} />
       </Card>

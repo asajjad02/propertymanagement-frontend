@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
@@ -14,6 +14,30 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Atrium",
   description: "Atrium — the calm command center for your property.",
+};
+
+/*
+ * Mobile-first viewport.
+ *   - `viewportFit: 'cover'` lets the app paint under the notch/home indicator;
+ *     the shell pays that back with env(safe-area-inset-*) padding, so fixed
+ *     chrome (topbar, bottom nav, sheets) sits clear of the hardware.
+ *   - `interactiveWidget: 'resizes-content'` makes the on-screen keyboard shrink
+ *     the viewport instead of overlaying it, so `dvh`-sized sheets and their
+ *     sticky footers stay above the keyboard.
+ *   - No `maximumScale`/`userScalable: false` — pinch-zoom is an accessibility
+ *     right. iOS focus-zoom is prevented properly, by giving every input a
+ *     ≥16px font size on mobile (see the control primitives).
+ *   - themeColor tracks --paper in each scheme so the browser chrome blends in.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d0e11" },
+  ],
 };
 
 /*

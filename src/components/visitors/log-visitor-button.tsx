@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/providers/auth-provider';
@@ -22,6 +23,7 @@ export function LogVisitorButton() {
         <Plus className="h-4 w-4" />
         Log Visitor
       </Button>
+      <AppBarAction icon={Plus} label="Log Visitor" onClick={() => setOpen(true)} />
       <Modal open={open} onOpenChange={setOpen} title="Log visitor" description="Record a new gate entry.">
         <VisitorForm onDone={() => setOpen(false)} />
       </Modal>

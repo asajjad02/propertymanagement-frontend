@@ -76,7 +76,7 @@ export function RegisterForm() {
       {errors._form && <p className="text-sm text-danger">{errors._form}</p>}
 
       <Field label="Society name" hint="The name of your society or company" error={errors.account_name}>
-        {(id) => <Input id={id} value={form.account_name} onChange={set('account_name')} placeholder="e.g. Greenview Residency" />}
+        {(id) => <Input autoCapitalize="words" id={id} value={form.account_name} onChange={set('account_name')} placeholder="e.g. Greenview Residency" />}
       </Field>
       <Field label="Username" error={errors.username}>
         {(id) => <Input id={id} value={form.username} onChange={set('username')} autoComplete="username" required />}

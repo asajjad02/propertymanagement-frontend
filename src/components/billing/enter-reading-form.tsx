@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
@@ -39,7 +40,7 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Current reading" required>
-          {(id) => <Input id={id} type="number" step="0.01" value={reading} onChange={(e) => setReading(e.target.value)} required />}
+          {(id) => <Input inputMode="decimal" id={id} type="number" step="0.01" value={reading} onChange={(e) => setReading(e.target.value)} required />}
         </Field>
         <Field label="Reading date" required>
           {(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />}
@@ -50,10 +51,10 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
       </Field>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={enterReading.isPending || !reading}>Enter reading & issue</Button>
-      </div>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={enterReading.isPending} disabled={enterReading.isPending || !reading}>Enter reading & issue</Button>
+      </FormActions>
     </form>
   );
 }
