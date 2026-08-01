@@ -13,45 +13,13 @@ import { Input } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonRegion } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { electricityBillHooks, meterHooks, useEnterBillReading } from '@/hooks/resources';
-import { useFlatsLookup } from '@/hooks/use-lookups';
+import { electricityBillHooks, useEnterBillReading } from '@/hooks/resources';
+import { currentMonthKey, useBillingRound, type MonthKey, type RoundStop } from '@/hooks/use-billing-round';
 import { cn } from '@/lib/cn';
 import { billingPeriodFor } from '@/lib/billing-period';
 import { numeric } from '@/lib/format';
-import type { ElectricityBill, Meter } from '@/types/api';
 
 const TODAY = new Date().toISOString().slice(0, 10);
-
-/** `YYYY-MM` — the month a billing round covers. */
-type MonthKey = string;
-
-function monthKeyOf(isoDate: string): MonthKey {
-  return isoDate.slice(0, 7);
-}
-
-function currentMonthKey(): MonthKey {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/** One stop on the round: an occupied flat, and its bill for the chosen month. */
-interface Stop {
-  flatId: number;
-  flatNumber: string;
-  meterId: number;
-  /** What the new reading will be measured against. */
-  previousReading: string;
-  /** This month's bill, at any status. Null until the round creates one. */
-  bill: ElectricityBill | null;
-  /**
-   * Already read for this month — the bill exists and has left draft.
-   *
-   * Derived from the server, not from what happened during this session: a
-   * flat billed on an earlier visit must not come back as pending, or the round
-   * would happily issue a second bill for the same month.
-   */
-  read: boolean;
-}
 
 /**
  * The meter round: walk the property, photograph each meter, type its reading,
@@ -64,57 +32,11 @@ interface Stop {
  * doesn't match the list order.
  */
 export default function MeterRoundPage() {
-  const flats = useFlatsLookup();
-  const meters = meterHooks.useAll();
-  // Every bill, not just drafts: a flat already billed for the chosen month has
-  // to read as done, and that bill is issued or paid, not draft.
-  const bills = electricityBillHooks.useAll();
   const [month, setMonth] = useState<MonthKey>(currentMonthKey);
   const [query, setQuery] = useState('');
 
-  const loading = flats.isPending || meters.isPending || bills.isPending;
-
-  /*
-   * A round is one month × every occupied flat.
-   *
-   * Each flat appears exactly once, and its state comes from whether a bill
-   * exists for *that month*: none or draft → still to read; issued or paid →
-   * done. Nothing is tracked in component state, so reloading mid-round doesn't
-   * resurrect flats that were already billed — which is what would let the same
-   * month be billed twice.
-   */
-  const stops = useMemo<Stop[]>(() => {
-    const meterByFlat = new Map<number, Meter>();
-    for (const m of meters.data ?? []) if (!meterByFlat.has(m.flat)) meterByFlat.set(m.flat, m);
-
-    const billByFlat = new Map<number, ElectricityBill>();
-    for (const b of bills.data ?? []) {
-      if (monthKeyOf(b.billing_period_end) !== month) continue;
-      // Prefer a non-draft bill if somehow both exist for a flat this month.
-      const existing = billByFlat.get(b.flat);
-      if (!existing || (existing.status === 'draft' && b.status !== 'draft')) billByFlat.set(b.flat, b);
-    }
-
-    return (flats.data ?? [])
-      .filter((f) => f.occupancy_status === 'occupied')
-      .map((f) => {
-        const meter = meterByFlat.get(f.id);
-        if (!meter) return null;
-        const bill = billByFlat.get(f.id) ?? null;
-        return {
-          flatId: f.id,
-          flatNumber: f.flat_number,
-          meterId: meter.id,
-          // An existing bill carries its own baseline; otherwise the meter's
-          // running value is the baseline the backend has been maintaining.
-          previousReading: bill ? bill.previous_reading : meter.current_reading,
-          bill,
-          read: !!bill && bill.status !== 'draft',
-        } satisfies Stop;
-      })
-      .filter((s): s is Stop => s !== null)
-      .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
-  }, [flats.data, meters.data, bills.data, month]);
+  // Shared with the Overview, so both report the same progress for the month.
+  const { stops, total, done, isPending: loading } = useBillingRound(month);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,8 +44,6 @@ export default function MeterRoundPage() {
     return stops.filter((s) => s.flatNumber.toLowerCase().includes(q));
   }, [stops, query]);
 
-  const total = stops.length;
-  const done = stops.filter((s) => s.read).length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
   return (
@@ -232,7 +152,7 @@ export default function MeterRoundPage() {
   );
 }
 
-function MeterRow({ stop, month }: { stop: Stop; month: MonthKey }) {
+function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const toast = useToast();
   const enterReading = useEnterBillReading();
   const createBill = electricityBillHooks.useCreate();
