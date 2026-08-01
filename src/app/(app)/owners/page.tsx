@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { AddOwnerButton } from '@/components/owners/add-owner-button';
 import { OwnersTable } from '@/components/owners/owners-table';
 import { Card } from '@/components/ui/card';
@@ -45,6 +46,7 @@ export default function OwnersListPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Owners" />
       <PageHeader
         title="Owners"
         subtitle="People who own flats in your property."

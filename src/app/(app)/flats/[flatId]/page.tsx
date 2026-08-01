@@ -4,13 +4,14 @@ import { Activity, FileText } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { BillingDocList } from '@/components/billing/billing-doc-list';
 import { billsToDocItems, chargesToDocItems } from '@/components/billing/to-doc-items';
 import { FlatActions } from '@/components/flats/flat-actions';
 import { FlatOverview } from '@/components/flats/flat-overview';
 import { DetailHeader } from '@/components/ui/detail-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingBlock } from '@/components/ui/spinner';
+import { DetailSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Tabs } from '@/components/ui/tabs';
 import { useFlatDetail } from '@/hooks/use-flat-detail';
@@ -28,7 +29,16 @@ export default function FlatDetailPage() {
   const detail = useFlatDetail(flatId);
   const [tab, setTab] = useState('overview');
 
-  if (detail.isLoading) return <LoadingBlock />;
+  if (detail.isLoading) {
+    // Keep the app bar (back chevron + where you are) while the record
+    // loads, then a placeholder shaped like the page that follows.
+    return (
+      <>
+        <PageChrome title="Flat" backHref="/flats" />
+        <DetailSkeleton />
+      </>
+    );
+  }
   if (!detail.flat) {
     return <EmptyState title="Flat not found" description="It may have been removed." />;
   }
@@ -37,6 +47,7 @@ export default function FlatDetailPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title={`Flat ${flat.flat_number}`} backHref="/flats" />
       <DetailHeader
         backHref="/flats"
         backLabel="All flats"

@@ -17,12 +17,15 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(fu
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
-      <Input ref={ref} type={show ? 'text' : 'password'} className={cn('pr-10', className)} {...props} />
+      <Input ref={ref} type={show ? 'text' : 'password'} className={cn('pr-12', className)} {...props} />
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+        className={cn(
+          'absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center',
+          'text-muted transition-colors hover:text-ink touch-manipulation md:h-9.5 md:w-10',
+        )}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>

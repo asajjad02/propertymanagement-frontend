@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { DateRangeFilter, type DateRange } from '@/components/ui/date-range-filter';
@@ -79,6 +80,7 @@ export default function VisitorLogPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Visitors" />
       <PageHeader
         title="Visitors"
         subtitle="Gate log across all buildings in your account."

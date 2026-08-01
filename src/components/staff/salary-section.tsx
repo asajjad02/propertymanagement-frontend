@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
@@ -87,18 +88,18 @@ export function SalarySection({ staffId }: { staffId: number }) {
         <form onSubmit={submit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Field label="Payment date" required>{(id) => <Input id={id} type="date" value={form.payment_date} onChange={set('payment_date')} required />}</Field>
-            <Field label="Amount" required>{(id) => <Input id={id} type="number" min="0" step="0.01" value={form.amount} onChange={set('amount')} required />}</Field>
+            <Field label="Amount" required>{(id) => <Input inputMode="decimal" id={id} type="number" min="0" step="0.01" value={form.amount} onChange={set('amount')} required />}</Field>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Method">{(id) => <Select id={id} value={form.payment_method} onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))} options={METHODS} className="w-full" />}</Field>
-            <Field label="Reference">{(id) => <Input id={id} value={form.reference_number} onChange={set('reference_number')} />}</Field>
+            <Field label="Reference">{(id) => <Input autoCapitalize="characters" autoCorrect="off" spellCheck={false} id={id} value={form.reference_number} onChange={set('reference_number')} />}</Field>
           </div>
           <Field label="Notes">{(id) => <Input id={id} value={form.notes} onChange={set('notes')} />}</Field>
           {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={create.isPending || !form.amount}>Record payment</Button>
-          </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)} className="hidden md:inline-flex">Cancel</Button>
+            <Button type="submit" loading={create.isPending} disabled={create.isPending || !form.amount}>Record payment</Button>
+          </FormActions>
         </form>
       </Modal>
     </Card>

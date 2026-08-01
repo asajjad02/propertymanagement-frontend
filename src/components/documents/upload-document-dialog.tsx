@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
 import { useUploadDocument } from '@/hooks/use-documents';
@@ -77,10 +78,10 @@ export function UploadDocumentDialog({
           )}
         </Field>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" disabled={upload.isPending || !file}>Upload</Button>
-        </div>
+        <FormActions>
+          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="hidden md:inline-flex">Cancel</Button>
+          <Button type="submit" loading={upload.isPending} disabled={upload.isPending || !file}>Upload</Button>
+        </FormActions>
       </form>
     </Modal>
   );

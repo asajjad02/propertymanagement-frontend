@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Segmented } from '@/components/ui/segmented';
 import { useToast } from '@/components/ui/toast';
@@ -71,12 +72,12 @@ export function ApartmentTypeForm({ type, onDone }: { type?: ApartmentType; onDo
       </Field>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={pending || !name.trim()}>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={pending} disabled={pending || !name.trim()}>
           {type ? 'Save changes' : 'Add type'}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 }

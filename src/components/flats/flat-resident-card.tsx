@@ -40,7 +40,7 @@ export function FlatResidentCard({
       <Button
         variant="secondary"
         size="sm"
-        disabled={endTenancy.isPending}
+        loading={endTenancy.isPending} disabled={endTenancy.isPending}
         onClick={() => endTenancy.mutate({ occupantId: activeOccupantId, flatId })}
       >
         End tenancy

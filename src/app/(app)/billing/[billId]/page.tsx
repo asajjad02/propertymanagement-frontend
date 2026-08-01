@@ -2,13 +2,14 @@
 
 import { useParams } from 'next/navigation';
 
+import { PageChrome } from '@/components/shell/page-chrome';
 import { BillActions } from '@/components/billing/bill-actions';
 import { Invoice } from '@/components/billing/invoice';
 import { PaymentPanel } from '@/components/billing/payment-panel';
 import { SendPanel } from '@/components/billing/send-panel';
 import { DetailHeader } from '@/components/ui/detail-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { LoadingBlock } from '@/components/ui/spinner';
+import { DetailSkeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useBillDetail } from '@/hooks/use-bill-detail';
 import { shortDate } from '@/lib/format';
@@ -18,11 +19,21 @@ export default function BillDetailPage() {
   const billId = Number(params.billId);
   const { bill, flat, meterNumber, payments, isLoading } = useBillDetail(billId);
 
-  if (isLoading) return <LoadingBlock />;
+  if (isLoading) {
+    // Keep the app bar (back chevron + where you are) while the record
+    // loads, then a placeholder shaped like the page that follows.
+    return (
+      <>
+        <PageChrome title="Bill" backHref="/billing" />
+        <DetailSkeleton />
+      </>
+    );
+  }
   if (!bill) return <EmptyState title="Bill not found" description="It may have been removed." />;
 
   return (
     <div className="space-y-6">
+      <PageChrome title={`Bill #${bill.id}`} backHref="/billing" />
       <DetailHeader
         backHref="/billing"
         backLabel="All bills"

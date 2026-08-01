@@ -1,4 +1,5 @@
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/cn';
 import { money } from '@/lib/format';
 
 /** Sticky dues summary for the flat detail aside. */
@@ -6,14 +7,18 @@ export function AccountSummary({
   outstanding,
   billCount,
   chargeCount,
+  className,
 }: {
   outstanding: number;
   billCount: number;
   chargeCount: number;
+  className?: string;
 }) {
   const clear = outstanding <= 0;
   return (
-    <Card className="sticky top-20">
+    // Sticky only where it's an aside; on mobile it's the first block and
+    // sticking it would pin it over the content below.
+    <Card className={cn('lg:sticky lg:top-20', className)}>
       <CardHeader>
         <CardTitle>Account summary</CardTitle>
       </CardHeader>

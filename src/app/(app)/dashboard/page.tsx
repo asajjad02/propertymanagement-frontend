@@ -5,6 +5,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import Link from 'next/link';
 
 import { fetchDashboardSummary } from '@/api/endpoints';
+import { PageChrome } from '@/components/shell/page-chrome';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatCard, StatCardRow } from '@/components/ui/stat-card';
@@ -30,6 +31,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <PageChrome title="Overview" />
       <PageHeader
         title={`Welcome back${user ? `, ${user.username}` : ''}`}
         subtitle="Your society at a glance — occupancy, people, complaints, and who's on-site."

@@ -53,14 +53,14 @@ export function SocietyStep({ onNext, onSkip }: StepProps) {
   return (
     <div className="space-y-4">
       <Field label="Society name" required>
-        {(id) => <Input id={id} value={form.name} onChange={set('name')} placeholder="e.g. Greenview Residency" />}
+        {(id) => <Input autoCapitalize="words" id={id} value={form.name} onChange={set('name')} placeholder="e.g. Greenview Residency" />}
       </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Contact person">
-          {(id) => <Input id={id} value={form.contact_person} onChange={set('contact_person')} />}
+          {(id) => <Input autoCapitalize="words" id={id} value={form.contact_person} onChange={set('contact_person')} />}
         </Field>
         <Field label="Phone">
-          {(id) => <Input id={id} value={form.phone} onChange={set('phone')} />}
+          {(id) => <Input type="tel" inputMode="tel" autoComplete="off" id={id} value={form.phone} onChange={set('phone')} />}
         </Field>
       </div>
       <Field label="Contact email">

@@ -3,12 +3,16 @@
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { QuickAddOwnerDialog } from '@/components/owners/quick-add-owner-dialog';
+import { OwnerQuickForm } from '@/components/owners/owner-quick-form';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Segmented } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
+import { cn } from '@/lib/cn';
 import { flatHooks } from '@/hooks/resources';
 import { useApartmentTypesLookup, useOwnersLookup, usePeopleLookup } from '@/hooks/use-lookups';
 import { toApiError } from '@/lib/errors';
@@ -19,8 +23,21 @@ const OCCUPANCY = [
   { value: 'occupied', label: 'Occupied' },
 ];
 
+export interface FlatFormProps {
+  flat?: Flat;
+  onDone: () => void;
+  /** True while the "New owner" sub-view is showing (owned by the dialog). */
+  creatingOwner?: boolean;
+  onCreatingOwnerChange?: (creating: boolean) => void;
+}
+
 /** Create/edit a flat. Pass `flat` to edit; omit to create. */
-export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) {
+export function FlatForm({
+  flat,
+  onDone,
+  creatingOwner = false,
+  onCreatingOwnerChange,
+}: FlatFormProps) {
   const toast = useToast();
   const owners = useOwnersLookup();
   const people = usePeopleLookup();
@@ -34,7 +51,6 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
   const [floor, setFloor] = useState(String(flat?.floor_number ?? 1));
   const [occupancy, setOccupancy] = useState(flat?.occupancy_status ?? 'vacant');
   const [error, setError] = useState<string | null>(null);
-  const [addingOwner, setAddingOwner] = useState(false);
 
   function resetForFlatEntry() {
     // Keep type/occupancy (likely the same for the next unit); clear the
@@ -92,16 +108,44 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Flat number" required>
-          {(id) => <Input id={id} value={flatNumber} onChange={(e) => setFlatNumber(e.target.value)} required />}
-        </Field>
-        <Field label="Floor">
-          {(id) => <Input id={id} type="number" value={floor} onChange={(e) => setFloor(e.target.value)} />}
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+    <>
+      {/*
+       * Hidden rather than unmounted while the owner sub-view is up: everything
+       * already typed into the flat form has to still be here when the user
+       * comes back. A sibling of the owner form, never a parent — nesting one
+       * <form> inside another is invalid HTML.
+       */}
+      <form onSubmit={onSubmit} className={cn('space-y-4', creatingOwner && 'hidden')}>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Flat number" required>
+            {(id) => (
+              <Input
+                id={id}
+                value={flatNumber}
+                onChange={(e) => setFlatNumber(e.target.value)}
+                // Flat numbers are codes like A-101 — uppercase, never autocorrected.
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                autoFocus={!flat}
+                required
+              />
+            )}
+          </Field>
+          <Field label="Floor">
+            {(id) => (
+              <Input
+                id={id}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={floor}
+                onChange={(e) => setFloor(e.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+
         <Field label="Apartment type" hint={typeOptions.length === 0 ? 'Add types in Configuration' : undefined}>
           {(id) => (
             <Select
@@ -114,49 +158,85 @@ export function FlatForm({ flat, onDone }: { flat?: Flat; onDone: () => void }) 
             />
           )}
         </Field>
+
+        {/* Two mutually exclusive states — both worth seeing at once, and one
+            tap to switch. A dropdown here hid half the answer behind a tap. */}
         <Field label="Occupancy">
           {(id) => (
-            <Select id={id} value={occupancy} onValueChange={(v) => setOccupancy(v as typeof occupancy)}
-              options={OCCUPANCY} className="w-full" />
+            <Segmented
+              id={id}
+              options={OCCUPANCY}
+              value={occupancy}
+              onValueChange={(v) => setOccupancy(v as typeof occupancy)}
+            />
           )}
         </Field>
-      </div>
-      <Field label="Owner" hint="Optional">
-        {(id) => (
-          <div className="flex items-center gap-2">
-            <Select id={id} value={owner || undefined} onValueChange={setOwner}
-              options={ownerOptions} placeholder="No owner" className="w-full flex-1" />
-            <Button type="button" variant="secondary" onClick={() => setAddingOwner(true)}>
-              <Plus className="h-4 w-4" />
-              New
-            </Button>
-          </div>
-        )}
-      </Field>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        {!flat && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={pending || !flatNumber}
-            onClick={() => void submit(false)}
-          >
-            Save &amp; add another
+        <Field label="Owner" hint="Optional">
+          {(id) => (
+            <div className="flex items-center gap-2">
+              {/* Owners grow without bound, so this is type-to-filter rather
+                  than a scrolling list. */}
+              <SearchableSelect
+                id={id}
+                value={owner || undefined}
+                onValueChange={setOwner}
+                options={ownerOptions}
+                placeholder="No owner"
+                searchPlaceholder="Search owners…"
+                className="w-full flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => onCreatingOwnerChange?.(true)}
+                aria-label="Create a new owner"
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            </div>
+          )}
+        </Field>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <FormActions>
+          {/* Mobile dismisses by swipe, backdrop or the header's ✕, so Cancel is
+              dead weight there; the desktop dialog keeps it. "Save & add
+              another" is a desk-bound bulk-entry habit — same treatment. */}
+          <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">
+            Cancel
           </Button>
-        )}
-        <Button type="submit" disabled={pending || !flatNumber}>
-          {flat ? 'Save changes' : 'Add flat'}
-        </Button>
-      </div>
+          {!flat && (
+            <Button
+              type="button"
+              variant="secondary"
+              loading={pending} disabled={pending || !flatNumber}
+              onClick={() => void submit(false)}
+              className="hidden md:inline-flex"
+            >
+              Save &amp; add another
+            </Button>
+          )}
+          <Button type="submit" loading={pending} disabled={pending || !flatNumber}>
+            {flat ? 'Save changes' : 'Add flat'}
+          </Button>
+        </FormActions>
+      </form>
 
-      <QuickAddOwnerDialog
-        open={addingOwner}
-        onOpenChange={setAddingOwner}
-        onCreated={(ownerId) => setOwner(String(ownerId))}
-      />
-    </form>
+      {creatingOwner && (
+        <div className="motion-safe:animate-[subview-in_180ms_ease-out]">
+          <OwnerQuickForm
+            onCreated={(ownerId) => {
+              // Select the new owner and drop straight back to the flat form.
+              setOwner(String(ownerId));
+              onCreatingOwnerChange?.(false);
+            }}
+            onCancel={() => onCreatingOwnerChange?.(false)}
+          />
+        </div>
+      )}
+    </>
   );
 }

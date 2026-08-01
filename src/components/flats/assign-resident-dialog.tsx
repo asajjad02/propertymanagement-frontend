@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { PersonSelect } from '@/components/people/person-select';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { useAssignResident } from '@/hooks/use-flat-assignments';
@@ -48,10 +49,10 @@ export function AssignResidentDialog({
           {(id) => <Input id={id} type="date" value={moveIn} onChange={(e) => setMoveIn(e.target.value)} />}
         </Field>
         {error && <p className="text-sm text-danger">{error}</p>}
-        <div className="flex justify-end gap-2 pt-1">
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" disabled={assign.isPending || !person}>Assign resident</Button>
-        </div>
+        <FormActions>
+          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="hidden md:inline-flex">Cancel</Button>
+          <Button type="submit" loading={assign.isPending} disabled={assign.isPending || !person}>Assign resident</Button>
+        </FormActions>
       </form>
     </Modal>
   );

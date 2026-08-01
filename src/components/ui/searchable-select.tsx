@@ -63,9 +63,10 @@ export function SearchableSelect({
           type="button"
           disabled={disabled}
           className={cn(
-            'inline-flex h-9.5 min-w-[9rem] items-center justify-between gap-2 rounded-control border border-hairline',
-            'bg-surface px-3 text-sm text-ink transition-colors hover:border-muted/40',
+            'inline-flex h-11 min-w-[9rem] items-center justify-between gap-2 rounded-control border border-hairline',
+            'bg-surface px-3 text-base text-ink transition-colors hover:border-muted/40 touch-manipulation',
             'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 disabled:opacity-50',
+            'md:h-9.5 md:text-sm',
             className,
           )}
         >
@@ -79,11 +80,18 @@ export function SearchableSelect({
         <Popover.Content
           align="start"
           sideOffset={4}
+          collisionPadding={12}
           onOpenAutoFocus={(e) => {
             e.preventDefault();
-            inputRef.current?.focus();
+            // Autofocusing the filter field summons the on-screen keyboard the
+            // moment the popover opens, which on a phone leaves almost no room
+            // for the list it is meant to filter. Let the user tap to search.
+            if (window.matchMedia('(min-width: 768px)').matches) inputRef.current?.focus();
           }}
-          className="z-50 w-[min(22rem,var(--radix-popover-trigger-width,18rem))] overflow-hidden rounded-control border border-hairline bg-surface shadow-pop"
+          className={cn(
+            'z-50 overflow-hidden rounded-control border border-hairline bg-surface shadow-pop',
+            'w-[min(22rem,calc(100vw-1.5rem))] md:w-[min(22rem,var(--radix-popover-trigger-width,18rem))]',
+          )}
         >
           <div className="flex items-center gap-2 border-b border-hairline px-3">
             <Search className="h-4 w-4 text-faint" />
@@ -98,10 +106,11 @@ export function SearchableSelect({
                 }
               }}
               placeholder={searchPlaceholder}
-              className="h-9 w-full bg-transparent text-sm text-ink placeholder:text-faint focus:outline-none"
+              // text-base on mobile prevents iOS focus-zoom (see input.tsx).
+              className="h-11 w-full bg-transparent text-base text-ink placeholder:text-faint focus:outline-none md:h-9 md:text-sm"
             />
           </div>
-          <ul className="max-h-64 overflow-y-auto p-1">
+          <ul className="max-h-[min(16rem,45dvh)] overflow-y-auto overscroll-contain p-1">
             {filtered.length === 0 && (
               <li className="px-3 py-6 text-center text-sm text-muted">No matches</li>
             )}
@@ -111,8 +120,8 @@ export function SearchableSelect({
                   type="button"
                   onClick={() => choose(opt.value)}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-[6px] px-2.5 py-1.5 text-left text-sm text-ink',
-                    'hover:bg-raised',
+                    'flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2.5 text-left text-base text-ink',
+                    'hover:bg-raised md:py-1.5 md:text-sm',
                     opt.value === value && 'font-medium',
                   )}
                 >

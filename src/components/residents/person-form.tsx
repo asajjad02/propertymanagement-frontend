@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Segmented } from '@/components/ui/segmented';
@@ -111,7 +112,7 @@ export function PersonForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Full name" required>
-        {(id) => <Input id={id} value={form.full_name} onChange={set('full_name')} required />}
+        {(id) => <Input autoCapitalize="words" id={id} value={form.full_name} onChange={set('full_name')} required />}
       </Field>
 
       {!isEdit && (
@@ -148,8 +149,8 @@ export function PersonForm({
       )}
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="CNIC">{(id) => <Input id={id} value={form.cnic} onChange={set('cnic')} />}</Field>
-        <Field label="Phone">{(id) => <Input id={id} value={form.phone} onChange={set('phone')} />}</Field>
+        <Field label="CNIC">{(id) => <Input inputMode="numeric" id={id} value={form.cnic} onChange={set('cnic')} />}</Field>
+        <Field label="Phone">{(id) => <Input type="tel" inputMode="tel" autoComplete="off" id={id} value={form.phone} onChange={set('phone')} />}</Field>
       </div>
       <Field label="Email">
         {(id) => <Input id={id} type="email" value={form.email} onChange={set('email')} />}
@@ -159,20 +160,20 @@ export function PersonForm({
       </Field>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Emergency contact">
-          {(id) => <Input id={id} value={form.emergency_contact_name} onChange={set('emergency_contact_name')} />}
+          {(id) => <Input autoCapitalize="words" id={id} value={form.emergency_contact_name} onChange={set('emergency_contact_name')} />}
         </Field>
         <Field label="Emergency number">
-          {(id) => <Input id={id} value={form.emergency_contact_number} onChange={set('emergency_contact_number')} />}
+          {(id) => <Input type="tel" inputMode="tel" autoComplete="off" id={id} value={form.emergency_contact_number} onChange={set('emergency_contact_number')} />}
         </Field>
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={pending || !form.full_name}>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={pending} disabled={pending || !form.full_name}>
           {isEdit ? 'Save changes' : 'Add resident'}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 }

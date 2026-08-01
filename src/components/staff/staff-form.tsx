@@ -4,9 +4,10 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
+import { FormActions } from '@/components/ui/form-actions';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
+import { Segmented } from '@/components/ui/segmented';
 import { staffMemberHooks } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 import type { StaffMember, StaffMemberInput } from '@/types/api';
@@ -65,39 +66,47 @@ export function StaffForm({ staff, onDone }: { staff?: StaffMember; onDone: () =
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Full name" required>
-          {(id) => <Input id={id} value={form.full_name} onChange={set('full_name')} required />}
+          {(id) => <Input autoCapitalize="words" id={id} value={form.full_name} onChange={set('full_name')} required />}
         </Field>
         <Field label="Designation" hint="e.g. Security Guard">
-          {(id) => <Input id={id} value={form.designation} onChange={set('designation')} />}
+          {(id) => <Input autoCapitalize="words" id={id} value={form.designation} onChange={set('designation')} />}
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Phone">{(id) => <Input id={id} value={form.phone} onChange={set('phone')} />}</Field>
-        <Field label="CNIC">{(id) => <Input id={id} value={form.cnic} onChange={set('cnic')} />}</Field>
+        <Field label="Phone">{(id) => <Input type="tel" inputMode="tel" autoComplete="off" id={id} value={form.phone} onChange={set('phone')} />}</Field>
+        <Field label="CNIC">{(id) => <Input inputMode="numeric" id={id} value={form.cnic} onChange={set('cnic')} />}</Field>
       </div>
       <Field label="Emergency contact">
-        {(id) => <Input id={id} value={form.emergency_contact} onChange={set('emergency_contact')} />}
+        {(id) => <Input autoCapitalize="words" id={id} value={form.emergency_contact} onChange={set('emergency_contact')} />}
       </Field>
-      <div className="grid grid-cols-3 gap-4">
+      {/* Three columns is unreadable at 390px — two here, and Status takes the
+          full row so its toggle has somewhere to go. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Field label="Joining date">
           {(id) => <Input id={id} type="date" value={form.joining_date ?? ''} onChange={set('joining_date')} />}
         </Field>
         <Field label="Monthly salary">
-          {(id) => <Input id={id} type="number" min="0" step="0.01" value={form.salary} onChange={set('salary')} />}
+          {(id) => <Input inputMode="decimal" id={id} type="number" min="0" step="0.01" value={form.salary} onChange={set('salary')} />}
         </Field>
-        <Field label="Status">
+        <Field label="Status" className="col-span-2 sm:col-span-1">
           {(id) => (
-            <Select id={id} value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as typeof f.status }))} options={STATUS} className="w-full" />
+            // Active/inactive is a two-state switch, not a list to open.
+            <Segmented
+              id={id}
+              options={STATUS}
+              value={form.status}
+              onValueChange={(v) => setForm((f) => ({ ...f, status: v as typeof f.status }))}
+            />
           )}
         </Field>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
-      <div className="flex justify-end gap-2 pt-1">
-        <Button type="button" variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button type="submit" disabled={pending || !form.full_name}>
+      <FormActions>
+        <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
+        <Button type="submit" loading={pending} disabled={pending || !form.full_name}>
           {staff ? 'Save changes' : 'Add staff member'}
         </Button>
-      </div>
+      </FormActions>
     </form>
   );
 }

@@ -3,6 +3,7 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AppBarAction } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useAuth } from '@/providers/auth-provider';
@@ -22,7 +23,8 @@ export function NewBillButton() {
         <Plus className="h-4 w-4" />
         New Bill
       </Button>
-      <Modal open={open} onOpenChange={setOpen} title="New monthly bill" description="Create a draft for the flat's meter. Entering the reading calculates electricity, adds the fixed maintenance charge, and issues the combined bill.">
+      <AppBarAction icon={Plus} label="New Bill" onClick={() => setOpen(true)} />
+      <Modal open={open} onOpenChange={setOpen} title="New monthly bill" description="Pick the flat. The reading is entered on the meter round, which issues the bill.">
         <BillForm onDone={() => setOpen(false)} />
       </Modal>
     </>

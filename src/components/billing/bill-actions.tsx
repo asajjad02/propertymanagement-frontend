@@ -56,7 +56,7 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
 
       {canWrite && bill.status === 'issued' && (
         <>
-          <Button variant="secondary" size="sm" disabled={markPaid.isPending} onClick={() => setConfirmPaid(true)}>
+          <Button variant="secondary" size="sm" loading={markPaid.isPending} disabled={markPaid.isPending} onClick={() => setConfirmPaid(true)}>
             <CheckCheck className="h-4 w-4" />
             Mark paid
           </Button>
