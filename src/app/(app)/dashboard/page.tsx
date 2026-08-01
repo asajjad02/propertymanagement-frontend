@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowRight,
   Check,
   ChevronRight,
   DoorOpen,
@@ -24,15 +23,6 @@ import { cn } from '@/lib/cn';
 import { money } from '@/lib/format';
 import { useAuth } from '@/providers/auth-provider';
 
-import type { DashboardSummary } from '@/types/dashboard';
-
-type SetupKey = keyof DashboardSummary['setup'];
-const SETUP_STEPS: { key: SetupKey; label: string; href: string; cta: string }[] = [
-  { key: 'has_flats', label: 'Add flats', href: '/flats', cta: 'Flats' },
-  { key: 'has_rates', label: 'Set electricity rate & apartment types', href: '/configuration', cta: 'Configure' },
-  { key: 'has_team', label: 'Invite your team', href: '/team', cta: 'Team' },
-];
-
 /**
  * Overview.
  *
@@ -46,7 +36,7 @@ const SETUP_STEPS: { key: SetupKey; label: string; href: string; cta: string }[]
  * resolves it, and disappears when it hits zero. An empty list is the point.
  */
 export default function DashboardPage() {
-  const { user, hasRole } = useAuth();
+  const { user } = useAuth();
   const { data, isPending } = useQuery({ queryKey: ['dashboard', 'summary'], queryFn: fetchDashboardSummary });
 
   const month = currentMonthKey();
@@ -57,8 +47,6 @@ export default function DashboardPage() {
 
   const openComplaints = data ? data.complaints.open + data.complaints.in_progress : 0;
   const vacant = data?.flats.vacant ?? 0;
-  const setupDone = data ? Object.values(data.setup).every(Boolean) : true;
-  const showChecklist = hasRole('admin') && data && !setupDone;
 
   // Only what's actually outstanding shows up here.
   const tasks: TaskRow[] = [];
@@ -173,40 +161,6 @@ export default function DashboardPage() {
               </ul>
             )}
           </Card>
-
-          {showChecklist && (
-            <Card>
-              <CardHeader><CardTitle>Finish setting up</CardTitle></CardHeader>
-              <ul className="divide-y divide-hairline">
-                {SETUP_STEPS.map((step) => {
-                  const done = !!data?.setup[step.key];
-                  return (
-                    <li key={step.key} className="flex items-center justify-between gap-3 px-4 py-3 md:px-5">
-                      <span className="flex items-center gap-2.5 text-sm">
-                        <span
-                          className={cn(
-                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-pill',
-                            done ? 'bg-ok-soft text-ok' : 'border border-hairline text-faint',
-                          )}
-                        >
-                          {done && <Check className="h-3 w-3" />}
-                        </span>
-                        <span className={done ? 'text-muted line-through' : 'text-ink'}>{step.label}</span>
-                      </span>
-                      {!done && (
-                        <Link
-                          href={step.href}
-                          className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary-text"
-                        >
-                          {step.cta} <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </Card>
-          )}
 
           {/* Ambient status: worth knowing, nothing to do about it. Last, and quiet. */}
           <Card>
