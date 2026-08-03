@@ -1,14 +1,14 @@
 'use client';
 
-import { CheckCheck, Download, FileInput, Trash2, Wallet } from 'lucide-react';
+import { CheckCheck, FileInput, Printer, Trash2, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
-import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
+import * as api from '@/api/endpoints';
 import { electricityBillHooks, useMarkElectricityBillPaid } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
@@ -17,7 +17,7 @@ import type { ElectricityBill } from '@/types/api';
 import { EnterReadingForm } from './enter-reading-form';
 import { RecordPaymentForm } from './record-payment-form';
 
-/** Bill header actions, gated by status and role. PDF is deferred (disabled). */
+/** Bill header actions, gated by status and role. */
 export function BillActions({ bill }: { bill: ElectricityBill }) {
   const { hasRole } = useAuth();
   const toast = useToast();
@@ -28,6 +28,7 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
   const [payment, setPayment] = useState(false);
   const [confirmPaid, setConfirmPaid] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const canWrite = hasRole('admin', 'manager', 'accountant');
   // A paid bill is a settled record with payments hanging off it; deleting it
@@ -53,6 +54,31 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
     }
   }
 
+  async function onPrint() {
+    setPrinting(true);
+    try {
+      // Fetched rather than linked: the endpoint is authenticated, so a bare
+      // <a href> would land on a 401 instead of the bill.
+      const blob = await api.downloadBillPdf(bill.id);
+      const url = URL.createObjectURL(blob);
+      const tab = window.open(url, '_blank');
+      if (!tab) {
+        // Popup blocked — fall back to a download so the bill still reaches them.
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `bill-${bill.id}.pdf`;
+        link.click();
+      }
+      // Long enough for the tab to have loaded it; the object stays alive in the
+      // tab's own document either way.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      toast.error('Could not open the bill', toApiError(err).message);
+    } finally {
+      setPrinting(false);
+    }
+  }
+
   async function onMarkPaid() {
     try {
       await markPaid.mutateAsync(bill.id);
@@ -65,13 +91,16 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
 
   return (
     <>
-      {/* PDF export is part of the deferred pipeline. */}
-      <Tooltip content="PDF export isn’t available yet" side="bottom">
-        <Button variant="secondary" size="sm" disabled>
-          <Download className="h-4 w-4" />
-          PDF
-        </Button>
-      </Tooltip>
+      {/*
+       * Printing is a first-class way to deliver a bill, not a fallback for when
+       * email fails — plenty of flats have an owner to hand it to and no address
+       * on file. Opened in a tab rather than downloaded so it goes straight to
+       * the print dialog; the blob URL is revoked once the tab has it.
+       */}
+      <Button variant="secondary" size="sm" loading={printing} disabled={printing} onClick={onPrint}>
+        <Printer className="h-4 w-4" />
+        Print
+      </Button>
 
       {canWrite && bill.status === 'draft' && (
         <Button size="sm" onClick={() => setReading(true)}>
