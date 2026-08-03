@@ -10,6 +10,7 @@ import { money, shortDate } from '@/lib/format';
 
 /** Sortable fields, for the screen's `SortControl`. */
 export const BILL_SORT_OPTIONS = [
+  { field: 'flat__flat_number', label: 'Flat' },
   { field: 'billing_period_end', label: 'Period' },
   { field: 'total_payable', label: 'Total' },
   { field: 'status', label: 'Status' },
@@ -52,7 +53,12 @@ export function BillsTable({
         cell: (c) => <span className="font-medium text-ink">{c.getValue<string>()}</span>,
         meta: { mobile: 'secondary' },
       },
-      { id: 'flat', header: 'Flat', accessorFn: (r) => r.flatNumber, meta: { mobile: 'primary' } },
+      {
+        id: 'flat__flat_number',
+        header: 'Flat',
+        accessorFn: (r) => r.flatNumber,
+        meta: { sortable: true, mobile: 'primary' },
+      },
       {
         id: 'billing_period_end',
         header: 'Period',
