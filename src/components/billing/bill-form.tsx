@@ -68,7 +68,6 @@ export function BillForm({ onDone }: { onDone: () => void }) {
         meter: meterForFlat.id,
         billing_period_start: period.start,
         billing_period_end: period.end,
-        previous_reading: meterForFlat.current_reading,
         // Recomputed server-side on issue; sent only to satisfy the payload.
         previous_outstanding: '0',
       });

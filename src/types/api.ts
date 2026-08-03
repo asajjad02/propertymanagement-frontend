@@ -399,9 +399,15 @@ export interface ElectricityBill {
  * lifecycle fields are read-only server-side (set by the enter_reading action /
  * calculation service).
  */
+/**
+ * Creating a bill. `previous_reading` is deliberately absent: the server anchors
+ * every bill to its meter's running value, so a first-time baseline is written
+ * to the meter (PATCH) rather than sent here. Two clients creating bills at once
+ * therefore can't anchor to different baselines.
+ */
 export type ElectricityBillInput = Pick<
   ElectricityBill,
-  'flat' | 'meter' | 'billing_period_start' | 'billing_period_end' | 'previous_reading' | 'previous_outstanding'
+  'flat' | 'meter' | 'billing_period_start' | 'billing_period_end' | 'previous_outstanding'
 >;
 
 /** Payload for POST /api/electricity-bills/{id}/enter_reading/. */

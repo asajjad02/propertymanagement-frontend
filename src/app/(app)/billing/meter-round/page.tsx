@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonRegion } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { electricityBillHooks, useEnterBillReading } from '@/hooks/resources';
+import { electricityBillHooks, meterHooks, useEnterBillReading } from '@/hooks/resources';
 import { currentMonthKey, useBillingRound, type MonthKey, type RoundStop } from '@/hooks/use-billing-round';
 import { cn } from '@/lib/cn';
 import { billingPeriodFor } from '@/lib/billing-period';
@@ -45,6 +45,10 @@ export default function MeterRoundPage() {
   }, [stops, query]);
 
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  // Stops that would have to invent a baseline before they can be billed — the
+  // same test MeterRow makes per row, counted here to offer the bulk screen.
+  const needBaseline = stops.filter((s) => !s.bill && Number(s.previousReading) === 0).length;
 
   return (
     <div className="space-y-4 md:mx-auto md:max-w-2xl md:space-y-6">
@@ -133,6 +137,24 @@ export default function MeterRoundPage() {
             <SearchInput value={query} onChange={setQuery} placeholder="Jump to a flat…" />
           </div>
 
+          {/*
+           * On a first month, most flats have no starting figure and each row
+           * would ask for one mid-walk. Offer the bulk screen up front instead —
+           * opening readings get copied off a sheet at a desk, not in a stairwell.
+           */}
+          {needBaseline > 1 && (
+            <Link
+              href="/billing/opening-readings"
+              className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-raised px-4 py-3 hover:border-line"
+            >
+              <p className="text-sm text-ink">
+                <span className="font-medium tabular-nums">{needBaseline} flats</span>
+                <span className="text-muted"> have no starting reading yet</span>
+              </p>
+              <span className="shrink-0 text-xs font-medium text-primary">Set them all →</span>
+            </Link>
+          )}
+
           {visible.length === 0 ? (
             <p className="px-1 py-8 text-center text-sm text-muted">
               No pending meter matches “{query}”.
@@ -156,10 +178,11 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const toast = useToast();
   const enterReading = useEnterBillReading();
   const createBill = electricityBillHooks.useCreate();
+  const patchMeter = meterHooks.usePatch();
   const [reading, setReading] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const { flatNumber } = stop;
-  const working = createBill.isPending || enterReading.isPending;
+  const working = createBill.isPending || enterReading.isPending || patchMeter.isPending;
 
   /*
    * A meter that has never been read sits at 0, but the dial on the wall
@@ -192,12 +215,21 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       const [y, m] = month.split('-').map(Number);
       const period = billingPeriodFor(new Date(y, m - 1, 1));
       try {
+        // The bill derives `previous_reading` from the meter's running value, so
+        // a first-time baseline is written to the meter rather than sent with
+        // the bill. One source of truth: two clients creating bills at once
+        // can't anchor to different baselines.
+        if (needsBaseline && baseline) {
+          await patchMeter.mutateAsync({
+            id: stop.meterId,
+            payload: { current_reading: baseline, previous_reading: baseline },
+          });
+        }
         const created = await createBill.mutateAsync({
           flat: stop.flatId,
           meter: stop.meterId,
           billing_period_start: period.start,
           billing_period_end: period.end,
-          previous_reading: effectivePrevious,
           // Recomputed server-side on issue; sent only to satisfy the payload.
           previous_outstanding: '0',
         });
