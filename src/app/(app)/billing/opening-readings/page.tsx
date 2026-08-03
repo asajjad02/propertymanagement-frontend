@@ -22,13 +22,19 @@ import { toApiError } from '@/lib/errors';
 type Row = { meterId: number; flatNumber: string; current: string; isSet: boolean };
 
 /**
- * Opening readings — set the starting number on many meters at once.
+ * Opening readings — set each meter's starting point, for many flats at once.
  *
  * A new meter in the system sits at 0, but the dial on the wall doesn't. Billing
  * `current - 0` would charge a resident for the meter's whole lifetime, so every
- * flat needs its real starting figure recorded once. Doing that flat-by-flat is
+ * flat needs a real starting figure recorded once. Doing that flat-by-flat is
  * fifty round trips through the flat detail screen on your first month, which is
  * why this screen exists: one list, one number per row, one save.
+ *
+ * The number asked for is the *last reading on record*, typically last month's —
+ * not today's. Today's would make the first bill cover nothing, because the month
+ * just gone would fall below the baseline instead of being billed. This is also
+ * why history isn't entered as bills: the only thing needed to start billing
+ * correctly is the number the next bill counts up from.
  *
  * It writes to the meter rather than to a bill on purpose — the meter's running
  * value is what the server derives every future `previous_reading` from, so this
@@ -140,8 +146,9 @@ export default function OpeningReadingsPage() {
       </div>
 
       <p className="text-sm text-muted">
-        Enter what each meter reads on the wall right now. Future bills count up from this
-        number, so it only needs setting once per flat. Blank rows are left untouched.
+        Enter the last reading you have on record for each flat — usually last month&apos;s. This
+        month&apos;s bill counts up from it, so it only needs setting once per flat. Blank rows are
+        left untouched.
       </p>
 
       <Card>
@@ -168,7 +175,7 @@ export default function OpeningReadingsPage() {
             title={unsetOnly ? 'Every meter has a starting reading' : 'No flats match'}
             description={
               unsetOnly
-                ? 'Nothing to set up — the meter round will bill from each meter’s own number.'
+                ? 'Nothing to set up — every flat has a reading for the next bill to count up from.'
                 : 'Try a different flat number.'
             }
           />

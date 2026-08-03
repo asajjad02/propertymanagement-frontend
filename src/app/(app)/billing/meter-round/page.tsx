@@ -149,16 +149,22 @@ export default function MeterRoundPage() {
            * would ask for one mid-walk. Offer the bulk screen up front instead —
            * opening readings get copied off a sheet at a desk, not in a stairwell.
            */}
-          {needBaseline > 1 && (
+          {needBaseline > 0 && (
             <Link
               href="/billing/opening-readings"
               className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-raised px-4 py-3 hover:border-line"
             >
               <p className="text-sm text-ink">
-                <span className="font-medium tabular-nums">{needBaseline} flats</span>
-                <span className="text-muted"> have no starting reading yet</span>
+                <span className="font-medium tabular-nums">
+                  {needBaseline} {needBaseline === 1 ? 'flat' : 'flats'}
+                </span>
+                <span className="text-muted">
+                  {needBaseline === 1 ? ' has no' : ' have no'} previous reading yet
+                </span>
               </p>
-              <span className="shrink-0 text-xs font-medium text-primary">Set them all →</span>
+              <span className="shrink-0 text-xs font-medium text-primary">
+                {needBaseline === 1 ? 'Set it' : 'Set them all'} →
+              </span>
             </Link>
           )}
 
