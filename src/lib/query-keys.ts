@@ -9,6 +9,12 @@ export const queryKeys = {
   auth: {
     me: ['auth', 'me'] as const,
   },
+  billing: {
+    // The server-computed billing round. `rounds` is the invalidation prefix;
+    // `round(month)` is a specific month's query.
+    rounds: ['billing', 'round'] as const,
+    round: (month: string) => ['billing', 'round', month] as const,
+  },
   resource: (resource: string) => ({
     all: [resource] as const,
     lists: () => [resource, 'list'] as const,

@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ApartmentType,
   ApartmentTypeInput,
+  BillingRound,
   BulkFlatsInput,
   BulkFlatsResult,
   Building,
@@ -106,12 +107,34 @@ export async function bulkCreateFlats(payload: BulkFlatsInput): Promise<BulkFlat
   return data;
 }
 
-/** POST /electricity-bills/{id}/enter_reading/ — records the reading and issues the bill. */
+/**
+ * POST /electricity-bills/{id}/enter_reading/ — records the reading + meter
+ * photo and issues the bill. Multipart, because the photo commits in the same
+ * request (the backend rejects a reading without it). The api-client drops the
+ * JSON Content-Type for FormData so the browser sets the multipart boundary.
+ */
 export async function enterBillReading(id: number, payload: EnterReadingInput): Promise<ElectricityBill> {
+  const form = new FormData();
+  form.append('current_reading', payload.current_reading);
+  form.append('reading_date', payload.reading_date);
+  if (payload.notes) form.append('notes', payload.notes);
+  form.append('photo', payload.photo);
   const { data } = await apiClient.post<ElectricityBill>(
     `${electricityBills.path}${id}/enter_reading/`,
-    payload,
+    form,
   );
+  return data;
+}
+
+/** GET /billing/rounds/{month}/ — the month's stops and progress in one request. */
+export async function fetchBillingRound(month: string): Promise<BillingRound> {
+  const { data } = await apiClient.get<BillingRound>(`/billing/rounds/${month}/`);
+  return data;
+}
+
+/** POST /billing/rounds/ — create the month's draft bills (defaults to current month). */
+export async function createBillingRound(month?: string): Promise<BillingRound> {
+  const { data } = await apiClient.post<BillingRound>('/billing/rounds/', month ? { month } : {});
   return data;
 }
 

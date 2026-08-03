@@ -1,10 +1,12 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { electricityBillHooks, meterHooks } from '@/hooks/resources';
-import { useFlatsLookup } from '@/hooks/use-lookups';
-import type { ElectricityBill, Meter } from '@/types/api';
+import { fetchBillingRound } from '@/api/endpoints';
+import { electricityBillHooks } from '@/hooks/resources';
+import { queryKeys } from '@/lib/query-keys';
+import type { ElectricityBill } from '@/types/api';
 
 /** `YYYY-MM` — the month a billing round covers. */
 export type MonthKey = string;
@@ -22,73 +24,46 @@ export function currentMonthKey(): MonthKey {
 export interface RoundStop {
   flatId: number;
   flatNumber: string;
-  meterId: number;
   /** What a new reading will be measured against. */
   previousReading: string;
-  /** This month's bill, at any status. Null until the round creates one. */
+  /** This month's bill, at any status. Null until a draft is created. */
   bill: ElectricityBill | null;
-  /**
-   * Already read for this month — the bill exists and has left draft.
-   *
-   * Derived from the server, never from what happened during a session: a flat
-   * billed on an earlier visit must not come back as pending, or the round
-   * would happily issue a second bill for the same month.
-   */
+  /** Already read this month — the bill exists and has left draft. */
   read: boolean;
 }
 
 /**
- * A billing round: one month × every occupied flat that has a meter.
+ * The month's billing round, fetched from the server (GET /billing/rounds/).
  *
- * Shared by the meter round and the Overview so the two always report the same
- * progress. All three queries are cached, so a second caller costs nothing.
+ * The server owns the round now — scope (occupied flats), period, and each
+ * flat's bill + read-state — so this is a thin fetch + shape-map onto RoundStop
+ * (one request, not the old flats/meters/bills walk). Shared by the meter round
+ * and the Overview; the query is invalidated whenever a bill is created/issued.
  */
 export function useBillingRound(month: MonthKey) {
-  const flats = useFlatsLookup();
-  const meters = meterHooks.useAll();
-  const bills = electricityBillHooks.useAll();
+  const round = useQuery({
+    queryKey: queryKeys.billing.round(month),
+    queryFn: () => fetchBillingRound(month),
+  });
 
-  const stops = useMemo<RoundStop[]>(() => {
-    const meterByFlat = new Map<number, Meter>();
-    for (const m of meters.data ?? []) if (!meterByFlat.has(m.flat)) meterByFlat.set(m.flat, m);
-
-    const billByFlat = new Map<number, ElectricityBill>();
-    for (const b of bills.data ?? []) {
-      if (monthKeyOf(b.billing_period_end) !== month) continue;
-      // Prefer a non-draft bill if somehow both exist for a flat this month.
-      const existing = billByFlat.get(b.flat);
-      if (!existing || (existing.status === 'draft' && b.status !== 'draft')) billByFlat.set(b.flat, b);
-    }
-
-    return (flats.data ?? [])
-      .filter((f) => f.occupancy_status === 'occupied')
-      .map((f) => {
-        const meter = meterByFlat.get(f.id);
-        if (!meter) return null;
-        const bill = billByFlat.get(f.id) ?? null;
-        return {
-          flatId: f.id,
-          flatNumber: f.flat_number,
-          meterId: meter.id,
-          // An existing bill carries its own baseline; otherwise the meter's
-          // running value is the baseline the backend has been maintaining.
-          previousReading: bill ? bill.previous_reading : meter.current_reading,
-          bill,
-          read: !!bill && bill.status !== 'draft',
-        } satisfies RoundStop;
-      })
-      .filter((s): s is RoundStop => s !== null)
-      .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
-  }, [flats.data, meters.data, bills.data, month]);
-
-  const done = stops.filter((s) => s.read).length;
+  const stops = useMemo<RoundStop[]>(
+    () =>
+      (round.data?.stops ?? []).map((s) => ({
+        flatId: s.flat,
+        flatNumber: s.flat_number,
+        previousReading: s.previous_reading,
+        bill: s.bill,
+        read: s.read,
+      })),
+    [round.data],
+  );
 
   return {
     stops,
-    total: stops.length,
-    done,
-    remaining: stops.length - done,
-    isPending: flats.isPending || meters.isPending || bills.isPending,
+    total: round.data?.total ?? 0,
+    done: round.data?.done ?? 0,
+    remaining: round.data?.remaining ?? 0,
+    isPending: round.isPending,
   };
 }
 

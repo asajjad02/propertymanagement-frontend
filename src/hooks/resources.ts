@@ -66,6 +66,9 @@ export function useEnterBillReading() {
       // The reading also mutates the meter's current_reading.
       qc.invalidateQueries({ queryKey: queryKeys.resource('meters').all });
       qc.invalidateQueries({ queryKey: queryKeys.resource('meter-readings').all });
+      // Issuing changes the round's progress, and the flat's current_reading.
+      qc.invalidateQueries({ queryKey: queryKeys.billing.rounds });
+      qc.invalidateQueries({ queryKey: queryKeys.resource('flats').all });
     },
   });
 }
