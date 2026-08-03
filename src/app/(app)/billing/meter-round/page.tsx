@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { MeterPhotoField } from '@/components/billing/meter-photo-field';
+import { FlatFormDialog } from '@/components/flats/flat-form-dialog';
 import { PrintRoundButton } from '@/components/billing/print-round-button';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
@@ -229,6 +230,7 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const needsBaseline =
     Number(stop.previousReading) === 0 && (!stop.bill || draftAnchoredAtZero);
   const [baseline, setBaseline] = useState('');
+  const [editingFlat, setEditingFlat] = useState(false);
   const effectivePrevious = needsBaseline && baseline ? baseline : stop.previousReading;
 
   /*
@@ -372,9 +374,25 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
           <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
           <p className="text-xs text-ink-secondary">
             {stop.blocked}{' '}
-            <Link href={`/flats/${stop.flatId}`} className="font-medium text-primary underline">
-              Fix it on the flat
-            </Link>
+            {/*
+              * Fixed here, in a dialog, rather than by navigating away: leaving
+              * the round means losing your place in it, and the reading you were
+              * about to take. A missing rate is the exception — that's a
+              * building-wide setting, not something this flat can answer for.
+              */}
+            {stop.blockedKind === 'apartment_type' ? (
+              <button
+                type="button"
+                onClick={() => setEditingFlat(true)}
+                className="font-medium text-primary underline"
+              >
+                Set the apartment type
+              </button>
+            ) : (
+              <Link href="/rates" className="font-medium text-primary underline">
+                Configure the rate
+              </Link>
+            )}
           </p>
         </div>
       ) : (
@@ -422,6 +440,10 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       )}
       </>
       )}
+
+      {/* The round refetches on save: flat mutations invalidate the whole `flats`
+          key, which is what the round's lookup reads from. */}
+      <FlatFormDialog flat={stop.flat} open={editingFlat} onOpenChange={setEditingFlat} />
     </li>
   );
 }

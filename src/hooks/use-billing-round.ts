@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 
 import { electricityBillHooks, meterHooks } from '@/hooks/resources';
 import { useFlatsLookup } from '@/hooks/use-lookups';
-import type { ElectricityBill, Meter } from '@/types/api';
+import type { ElectricityBill, Flat, Meter } from '@/types/api';
 
 /** `YYYY-MM` — the month a billing round covers. */
 export type MonthKey = string;
@@ -44,6 +44,14 @@ export interface RoundStop {
    * rather than 400-ing once the photo is taken and the reading typed.
    */
   blocked: string | null;
+  /**
+   * What kind of problem `blocked` is, so the row can offer the fix rather than
+   * only naming it. A missing apartment type is fixed on the flat; a missing rate
+   * is a building-wide setting and isn't.
+   */
+  blockedKind: 'apartment_type' | 'rate' | null;
+  /** The flat itself, so a row can edit it in place. */
+  flat: Flat;
 }
 
 /**
@@ -74,7 +82,11 @@ export function useBillingRound(month: MonthKey) {
     }
 
     return (flats.data ?? [])
-      .map((f) => {
+      // Annotated return rather than `satisfies` on the literal: TS narrows a
+      // const to its assigned value at the use site, so the object's inferred
+      // blockedKind was narrower than RoundStop's and failed the guard below.
+      // The annotation checks the literal just as strictly.
+      .map((f): RoundStop | null => {
         const meter = meterByFlat.get(f.id);
         if (!meter) return null;
         const bill = billByFlat.get(f.id) ?? null;
@@ -92,9 +104,11 @@ export function useBillingRound(month: MonthKey) {
             f.apartment_type == null
               ? 'This flat has no apartment type, so its maintenance charge is unknown.'
               : null,
+          blockedKind: f.apartment_type == null ? 'apartment_type' : null,
+          flat: f,
           bill,
           read: !!bill && bill.status !== 'draft',
-        } satisfies RoundStop;
+        };
       })
       .filter((s): s is RoundStop => s !== null)
       .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
