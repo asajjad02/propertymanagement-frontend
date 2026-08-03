@@ -84,7 +84,7 @@ export default function MeterRoundPage() {
         <Card>
           <EmptyState
             title="No meters to read"
-            description="The round covers occupied flats that have a meter. Mark flats occupied, or add their meters, to see them here."
+            description="The round covers every flat that has a meter. Add flats, or their meters, to see them here."
           />
         </Card>
       ) : (
@@ -219,8 +219,8 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     if (!reading || !photo) return;
 
     // A stop without a bill gets one now, for the month being walked. This is
-    // what lets the round cover every occupied flat instead of only the ones
-    // someone had already prepared a bill for.
+    // what lets the round cover every flat instead of only the ones someone had
+    // already prepared a bill for.
     let billId = stop.bill?.id;
 
     // Replace a draft that's anchored at zero once we know the real baseline. A

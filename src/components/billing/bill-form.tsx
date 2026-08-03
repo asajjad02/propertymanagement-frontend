@@ -39,12 +39,11 @@ export function BillForm({ onDone }: { onDone: () => void }) {
 
   const period = useMemo(() => billingPeriodFor(), []);
 
-  // Occupied flats only — matching the meter round. A vacant flat has no
-  // resident to bill.
+  // Every flat, matching the round: a vacant flat still owes its maintenance,
+  // and its meter still has to be read to show it consumed nothing.
   const flatOptions = useMemo(
     () =>
       (flats.data ?? [])
-        .filter((f) => f.occupancy_status === 'occupied')
         .map((f) => ({ value: String(f.id), label: f.flat_number }))
         .sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true })),
     [flats.data],

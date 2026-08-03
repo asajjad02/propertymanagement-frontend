@@ -73,6 +73,26 @@ the meter, recreate. A draft carries nothing but the flat and the period, so
 recreating loses no work — and replacement is the only way to move a number the
 server owns. The count in the "set them all" banner uses the same test.
 
+## Every flat is billable now, not just occupied ones
+
+A rule change, not a bug: the round is one month × **every** flat. Maintenance is
+owed on a flat whether or not anyone lives in it, and skipping vacant flats also
+skipped their meter reading — so the next occupant inherited a baseline nobody
+had checked, and their first bill absorbed whatever the vacancy had used.
+
+The filter existed in three places, which is why it's worth listing:
+
+| Where | Was |
+| --- | --- |
+| `billing/rounds.py` `_occupied_flats` (backend) | filtered to `OCCUPIED`; now `_billable_flats`, no filter |
+| `src/hooks/use-billing-round.ts` | `.filter(f => f.occupancy_status === 'occupied')` |
+| `src/components/billing/bill-form.tsx` | New Bill's flat picker offered occupied flats only |
+
+Backend change is in its own PR (`feat/bill-all-flats`) with tests covering it.
+Two consequences to expect: round totals go up (44 → 66 stops in the account
+checked below), and **a vacant flat with no apartment type now enters the round**,
+so the repair script matters more than it did.
+
 ---
 
 ## Frontend changes

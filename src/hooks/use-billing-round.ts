@@ -18,7 +18,7 @@ export function currentMonthKey(): MonthKey {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** One stop on the round: an occupied flat, and its bill for the chosen month. */
+/** One stop on the round: a flat, and its bill for the chosen month. */
 export interface RoundStop {
   flatId: number;
   flatNumber: string;
@@ -38,7 +38,11 @@ export interface RoundStop {
 }
 
 /**
- * A billing round: one month × every occupied flat that has a meter.
+ * A billing round: one month × every flat that has a meter.
+ *
+ * Vacant flats are in it too. Maintenance is owed on a flat whether or not
+ * anyone lives in it, and skipping a vacant flat also skipped its meter reading,
+ * so the next occupant inherited a baseline nobody had checked.
  *
  * Shared by the meter round and the Overview so the two always report the same
  * progress. All three queries are cached, so a second caller costs nothing.
@@ -61,7 +65,6 @@ export function useBillingRound(month: MonthKey) {
     }
 
     return (flats.data ?? [])
-      .filter((f) => f.occupancy_status === 'occupied')
       .map((f) => {
         const meter = meterByFlat.get(f.id);
         if (!meter) return null;
