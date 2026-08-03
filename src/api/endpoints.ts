@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ApartmentType,
   ApartmentTypeInput,
+  BillingRound,
   BulkFlatsInput,
   BulkFlatsResult,
   Building,
@@ -122,6 +123,18 @@ export async function enterBillReading(id: number, payload: EnterReadingInput): 
     `${electricityBills.path}${id}/enter_reading/`,
     form,
   );
+  return data;
+}
+
+/** GET /billing/rounds/{month}/ — the month's stops and progress in one request. */
+export async function fetchBillingRound(month: string): Promise<BillingRound> {
+  const { data } = await apiClient.get<BillingRound>(`/billing/rounds/${month}/`);
+  return data;
+}
+
+/** POST /billing/rounds/ — create the month's draft bills (defaults to current month). */
+export async function createBillingRound(month?: string): Promise<BillingRound> {
+  const { data } = await apiClient.post<BillingRound>('/billing/rounds/', month ? { month } : {});
   return data;
 }
 

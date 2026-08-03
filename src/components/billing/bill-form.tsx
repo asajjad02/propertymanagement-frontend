@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { useFlatsLookup } from '@/hooks/use-lookups';
 import { billingPeriodFor } from '@/lib/billing-period';
 import { toApiError } from '@/lib/errors';
 import { numeric, shortDate } from '@/lib/format';
+import { queryKeys } from '@/lib/query-keys';
 
 /**
  * Create a draft electricity bill. The reading and derived charges are set later
@@ -25,6 +27,7 @@ import { numeric, shortDate } from '@/lib/format';
  */
 export function BillForm({ onDone }: { onDone: () => void }) {
   const toast = useToast();
+  const qc = useQueryClient();
   const flats = useFlatsLookup();
   const create = electricityBillHooks.useCreate();
   const [flat, setFlat] = useState('');
@@ -57,6 +60,8 @@ export function BillForm({ onDone }: { onDone: () => void }) {
         billing_period_start: period.start,
         billing_period_end: period.end,
       });
+      // A new draft changes the round's stops (meter round + Overview).
+      qc.invalidateQueries({ queryKey: queryKeys.billing.rounds });
       toast.success('Draft bill created', 'Enter the meter reading to issue it.');
       onDone();
     } catch (err) {

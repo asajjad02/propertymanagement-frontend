@@ -408,6 +408,28 @@ export type ElectricityBillInput = Pick<
   'flat' | 'billing_period_start' | 'billing_period_end'
 >;
 
+/** One stop on the server-computed billing round (GET /billing/rounds/{month}/). */
+export interface BillingRoundStop {
+  flat: number;
+  flat_number: string;
+  previous_reading: string;
+  read: boolean;
+  bill: ElectricityBill | null;
+}
+
+/** GET /billing/rounds/{month}/ — a month's stops and progress in one request. */
+export interface BillingRound {
+  month: string;
+  period_start: string;
+  period_end: string;
+  total: number;
+  done: number;
+  remaining: number;
+  stops: BillingRoundStop[];
+  /** Present only on the POST create response: number of drafts created. */
+  created?: number;
+}
+
 /**
  * Payload for POST /api/electricity-bills/{id}/enter_reading/ (multipart).
  * The meter `photo` is required and sent in the same request as the reading, so
