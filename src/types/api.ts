@@ -572,7 +572,33 @@ export type DocumentTarget =
   | 'staff_member'
   | 'complaint'
   | 'electricity_bill'
-  | 'inspection';
+  | 'inspection'
+  | 'bill_template';
+
+/** GET/PATCH /api/billing/template/ — the account's bill presentation. */
+export interface BillTemplate {
+  id: number;
+  logo: number | null;
+  brand_color: string;
+  header_title: string;
+  header_subtitle: string;
+  payee_name: string;
+  bank_name: string;
+  bank_branch: string;
+  account_number: string;
+  iban: string;
+  support_phone: string;
+  late_fee: string;
+  due_days: number;
+  instructions: string[];
+  layout: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BillTemplateInput = Partial<
+  Omit<BillTemplate, 'id' | 'created_at' | 'updated_at'>
+>;
 
 /** Named `AppDocument` to avoid clashing with the DOM `Document` type. */
 export interface AppDocument {
