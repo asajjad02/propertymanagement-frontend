@@ -226,7 +226,7 @@ export function DataTable<T>({
                           type="button"
                           onClick={() => toggleSort(field)}
                           className={cn(
-                            'label-mono group inline-flex items-center gap-1 transition-colors hover:text-ink',
+                            'label-mono group inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-ink',
                             right && 'flex-row-reverse',
                             isActive && 'text-ink',
                           )}

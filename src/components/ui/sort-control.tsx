@@ -68,7 +68,7 @@ export function SortControl({
         aria-label="Sort"
         className={cn(
           // 40px to match the toolbar's search field (see search-input.tsx).
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-hairline',
+          'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-control border border-hairline',
           'bg-surface text-ink-secondary transition-colors touch-manipulation active:bg-raised',
           isCustom && 'border-primary/40 text-primary-text',
           className,
@@ -91,7 +91,7 @@ export function SortControl({
                   type="button"
                   onClick={() => choose(o.field)}
                   className={cn(
-                    'flex w-full items-center justify-between gap-3 rounded-control px-2 py-3.5 text-left',
+                    'flex w-full cursor-pointer items-center justify-between gap-3 rounded-control px-2 py-3.5 text-left',
                     'text-base touch-manipulation transition-colors active:bg-raised',
                     isActive ? 'font-medium text-ink' : 'text-ink-secondary',
                   )}
@@ -115,7 +115,7 @@ export function SortControl({
                   onOrderingChange(null);
                   setOpen(false);
                 }}
-                className="w-full rounded-control px-2 py-3.5 text-left text-base text-muted transition-colors active:bg-raised"
+                className="w-full cursor-pointer rounded-control px-2 py-3.5 text-left text-base text-muted transition-colors active:bg-raised"
               >
                 Clear sort
               </button>
