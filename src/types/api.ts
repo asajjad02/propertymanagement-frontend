@@ -404,11 +404,16 @@ export type ElectricityBillInput = Pick<
   'flat' | 'meter' | 'billing_period_start' | 'billing_period_end' | 'previous_reading' | 'previous_outstanding'
 >;
 
-/** Payload for POST /api/electricity-bills/{id}/enter_reading/. */
+/**
+ * Payload for POST /api/electricity-bills/{id}/enter_reading/ (multipart).
+ * The meter `photo` is required and sent in the same request as the reading, so
+ * the bill and its evidence are issued together.
+ */
 export interface EnterReadingInput {
   current_reading: string;
   reading_date: string;
   notes?: string;
+  photo: File;
 }
 
 export interface MaintenanceCharge {

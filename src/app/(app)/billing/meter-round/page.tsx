@@ -4,7 +4,6 @@ import { ArrowLeft, Camera, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { uploadDocument } from '@/api/documents';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -163,9 +162,10 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
 
   /*
    * The photo is the evidence for the reading, so it's required, not optional —
-   * a bill issued without one can't be defended if a resident disputes it.
-   * Upload first: if it fails we stop with nothing issued, rather than leaving a
-   * live bill behind with no proof attached.
+   * a bill issued without one can't be defended if a resident disputes it. It
+   * rides along in the enter_reading request; the server commits the reading,
+   * the issue, and the photo together (or none), so there's nothing to clean up
+   * on failure.
    */
   async function issue() {
     if (!reading || !photo) return;
@@ -195,28 +195,14 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     }
 
     try {
+      // Reading + photo go together; the server issues the bill and stores the
+      // photo in one transaction, so there's no "issued but no photo" state.
       await enterReading.mutateAsync({
         id: billId,
-        payload: { current_reading: reading, reading_date: TODAY },
+        payload: { current_reading: reading, reading_date: TODAY, photo },
       });
     } catch {
       toast.error('Could not issue bill', `${flatNumber}: check the reading is above ${numeric(stop.previousReading)}.`);
-      return;
-    }
-    try {
-      await uploadDocument({
-        file: photo,
-        related_model: 'electricity_bill',
-        related_id: billId,
-        document_type: 'meter_photo',
-      });
-    } catch {
-      // The bill is already issued at this point — say so plainly and point at
-      // the fix rather than pretending the whole thing failed.
-      toast.warning(
-        'Bill issued, photo failed',
-        `${flatNumber}: reading saved. Attach the meter photo from the bill.`,
-      );
       return;
     }
     toast.success('Bill issued', `${flatNumber} · reading ${numeric(reading)}`);
