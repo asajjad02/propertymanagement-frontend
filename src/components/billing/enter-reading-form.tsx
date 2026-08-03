@@ -56,8 +56,13 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
        * Required, not optional: the reading issues the bill, and a bill that
        * can't be evidenced can't be defended if a resident disputes it. It ships
        * in the same request as the reading, so the two commit together.
+       *
+       * Goes through MeterPhotoField rather than a bare file input. A plain input
+       * with `capture="environment"` sends a phone straight to the camera with no
+       * way to reach an existing photo, and hands over whatever the library holds
+       * — HEIC on an iPhone, which the API rejects.
        */}
-      <Field label="Meter photo" required hint="Attached to the bill as evidence">
+      <Field label="Meter photo" required hint="The evidence behind the reading">
         {() => <MeterPhotoField value={photo} onChange={setPhoto} />}
       </Field>
       <Field label="Notes" hint="Optional">
@@ -67,7 +72,7 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
       {error && <p className="text-sm text-danger">{error}</p>}
       <FormActions>
         <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
-        <Button type="submit" loading={enterReading.isPending} disabled={enterReading.isPending || !reading || !photo}>Enter reading & issue</Button>
+        <Button type="submit" loading={enterReading.isPending} disabled={enterReading.isPending || !reading || !photo}>Enter reading &amp; issue</Button>
       </FormActions>
     </form>
   );

@@ -165,10 +165,13 @@ export function DataTable<T>({
 
   function toggleSort(field: string) {
     if (!onOrderingChange) return;
-    // Cycle: asc → desc → cleared.
+    // A header toggles its own column asc ⇄ desc. It deliberately never cycles
+    // to "cleared", because clearing falls back to the list's default ordering
+    // (often another column) — so a third click on "Flat" would snap the list
+    // back to, say, billing-period order, which reads as that column's button
+    // controlling a different sort. (Unsort stays available via SortControl.)
     if (active.field !== field) onOrderingChange(field);
-    else if (!active.desc) onOrderingChange(`-${field}`);
-    else onOrderingChange(null);
+    else onOrderingChange(active.desc ? field : `-${field}`);
   }
 
   return (
@@ -226,7 +229,7 @@ export function DataTable<T>({
                           type="button"
                           onClick={() => toggleSort(field)}
                           className={cn(
-                            'label-mono group inline-flex items-center gap-1 transition-colors hover:text-ink',
+                            'label-mono group inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-ink',
                             right && 'flex-row-reverse',
                             isActive && 'text-ink',
                           )}

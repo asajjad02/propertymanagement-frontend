@@ -108,12 +108,13 @@ export async function bulkCreateFlats(payload: BulkFlatsInput): Promise<BulkFlat
 }
 
 /**
- * POST /electricity-bills/{id}/enter_reading/ — records the reading and issues
- * the bill.
+ * POST /electricity-bills/{id}/enter_reading/ — records the reading + meter
+ * photo and issues the bill.
  *
- * Multipart, not JSON: the meter photo is required and commits in the same
- * transaction as the reading, so the endpoint takes only form data. The
- * Document row is created server-side — no separate upload call.
+ * Multipart, not JSON: the photo is required and commits in the same transaction
+ * as the reading, so the endpoint takes only form data. The api-client drops the
+ * JSON Content-Type for FormData so the browser sets the multipart boundary, and
+ * the Document row is created server-side — no separate upload call.
  */
 export async function enterBillReading(id: number, payload: EnterReadingInput): Promise<ElectricityBill> {
   const form = new FormData();
@@ -125,6 +126,18 @@ export async function enterBillReading(id: number, payload: EnterReadingInput): 
     `${electricityBills.path}${id}/enter_reading/`,
     form,
   );
+  return data;
+}
+
+/** GET /billing/rounds/{month}/ — the month's stops and progress in one request. */
+export async function fetchBillingRound(month: string): Promise<BillingRound> {
+  const { data } = await apiClient.get<BillingRound>(`/billing/rounds/${month}/`);
+  return data;
+}
+
+/** POST /billing/rounds/ — create the month's draft bills (defaults to current month). */
+export async function createBillingRound(month?: string): Promise<BillingRound> {
+  const { data } = await apiClient.post<BillingRound>('/billing/rounds/', month ? { month } : {});
   return data;
 }
 
@@ -196,11 +209,6 @@ export async function downloadRoundPdf(month: string): Promise<Blob> {
   return data;
 }
 
-/** GET /billing/rounds/{month}/ — one month's stops, joined server-side. */
-export async function fetchBillingRound(month: string): Promise<BillingRound> {
-  const { data } = await apiClient.get<BillingRound>(`/billing/rounds/${month}/`);
-  return data;
-}
 
 /**
  * GET /electricity-bills/outstanding/ — money owed, aggregated in the database.

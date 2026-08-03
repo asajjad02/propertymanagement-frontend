@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import * as api from '@/api/endpoints';
+import { fetchBillingRound, fetchOutstanding } from '@/api/endpoints';
 import { useFlatsLookup } from '@/hooks/use-lookups';
 import { queryKeys } from '@/lib/query-keys';
 import type { ElectricityBill, Flat } from '@/types/api';
@@ -28,18 +28,17 @@ export function currentMonthKey(): MonthKey {
 export interface RoundStop {
   flatId: number;
   flatNumber: string;
+  /**
+   * The flat's one meter. Needed to write an opening reading to it the first time
+   * a flat is read — the bill takes its baseline from the meter, so that's where
+   * the number has to land.
+   */
   meterId: number;
   /** What a new reading will be measured against. */
   previousReading: string;
-  /** This month's bill, at any status. Null until the round creates one. */
+  /** This month's bill, at any status. Null until a draft is created. */
   bill: ElectricityBill | null;
-  /**
-   * Already read for this month — the bill exists and has left draft.
-   *
-   * Derived from the server, never from what happened during a session: a flat
-   * billed on an earlier visit must not come back as pending, or the round
-   * would happily issue a second bill for the same month.
-   */
+  /** Already read this month — the bill exists and has left draft. */
   read: boolean;
   /**
    * Why this stop can't be billed yet, or null. Server-decided, because the
@@ -82,8 +81,8 @@ export interface RoundStop {
 export function useBillingRound(month: MonthKey) {
   const flats = useFlatsLookup();
   const round = useQuery({
-    queryKey: queryKeys.billingRound(month),
-    queryFn: () => api.fetchBillingRound(month),
+    queryKey: queryKeys.billing.round(month),
+    queryFn: () => fetchBillingRound(month),
   });
 
   const stops = useMemo<RoundStop[]>(() => {
@@ -122,6 +121,11 @@ export function useBillingRound(month: MonthKey) {
       .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
   }, [round.data, flats.map]);
 
+  /*
+   * Counted from `stops` rather than taken from the payload's own totals, so the
+   * progress line can never disagree with the list under it: a stop with no meter
+   * is dropped above, and the server counts it.
+   */
   const done = stops.filter((s) => s.read).length;
 
   return {
@@ -141,8 +145,8 @@ export function useBillingRound(month: MonthKey) {
  */
 export function useOutstanding() {
   const query = useQuery({
-    queryKey: queryKeys.outstanding(),
-    queryFn: api.fetchOutstanding,
+    queryKey: queryKeys.billing.outstanding,
+    queryFn: fetchOutstanding,
   });
 
   return {

@@ -235,9 +235,10 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
 
   /*
    * The photo is the evidence for the reading, so it's required, not optional —
-   * a bill issued without one can't be defended if a resident disputes it.
-   * Upload first: if it fails we stop with nothing issued, rather than leaving a
-   * live bill behind with no proof attached.
+   * a bill issued without one can't be defended if a resident disputes it. It
+   * rides along in the enter_reading request; the server commits the reading,
+   * the issue, and the photo together (or none), so there's nothing to clean up
+   * on failure.
    */
   async function issue() {
     if (!reading || !photo) return;
@@ -277,11 +278,8 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
         }
         const created = await createBill.mutateAsync({
           flat: stop.flatId,
-          meter: stop.meterId,
           billing_period_start: period.start,
           billing_period_end: period.end,
-          // Recomputed server-side on issue; sent only to satisfy the payload.
-          previous_outstanding: '0',
         });
         billId = created.id;
       } catch {
@@ -298,11 +296,16 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
      * multipart-only, failed outright.
      */
     try {
+      // Reading + photo go together; the server issues the bill and stores the
+      // photo in one transaction, so there's no "issued but no photo" state.
       await enterReading.mutateAsync({
         id: billId,
         payload: { current_reading: reading, reading_date: TODAY, photo },
       });
     } catch (err) {
+      // The server's own reason where it has one — "no apartment type", say — is
+      // more use than a guess about the reading. `effectivePrevious` accounts for
+      // a baseline just entered, which stop.previousReading wouldn't.
       toast.error(
         'Could not issue bill',
         toApiError(err).message || `${flatNumber}: check the reading is above ${numeric(effectivePrevious)}.`,

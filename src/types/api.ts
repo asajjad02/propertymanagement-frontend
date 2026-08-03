@@ -180,6 +180,8 @@ export interface Flat {
   floor_number: number;
   flat_type: string;
   occupancy_status: OccupancyStatus;
+  /** Read-only: the running reading on the flat's (one) meter. */
+  current_reading: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -188,7 +190,7 @@ export interface Flat {
 // account's single building when omitted. apartment_type_name is read-only.
 export type FlatInput = Omit<
   Flat,
-  'id' | 'created_at' | 'updated_at' | 'building' | 'apartment_type_name'
+  'id' | 'created_at' | 'updated_at' | 'building' | 'apartment_type_name' | 'current_reading'
 > & {
   building?: number;
 };
@@ -399,23 +401,49 @@ export interface ElectricityBill {
  * lifecycle fields are read-only server-side (set by the enter_reading action /
  * calculation service).
  */
-/**
- * Creating a bill. `previous_reading` is deliberately absent: the server anchors
- * every bill to its meter's running value, so a first-time baseline is written
- * to the meter (PATCH) rather than sent here. Two clients creating bills at once
- * therefore can't anchor to different baselines.
- */
+// Create only needs the flat and the period; the meter (one per flat),
+// previous_reading and previous_outstanding are all derived server-side. A
+// first-time baseline goes to the meter instead, so two clients creating bills at
+// once can't anchor to different numbers.
 export type ElectricityBillInput = Pick<
   ElectricityBill,
-  'flat' | 'meter' | 'billing_period_start' | 'billing_period_end' | 'previous_outstanding'
+  'flat' | 'billing_period_start' | 'billing_period_end'
 >;
 
-/** Payload for POST /api/electricity-bills/{id}/enter_reading/. */
+/** One stop on the server-computed billing round (GET /billing/rounds/{month}/). */
+export interface BillingRoundStop {
+  flat: number;
+  flat_number: string;
+  /** The flat's one meter. Needed to write a first-time opening reading to it. */
+  meter: number | null;
+  previous_reading: string;
+  read: boolean;
+  bill: ElectricityBill | null;
+  /** Why this stop can't be billed yet, or null — see billing/rounds.py. */
+  blocked: string | null;
+  /** Which kind of problem, so a client can offer the fix and not just name it. */
+  blocked_kind: 'apartment_type' | 'rate' | null;
+}
+
+/** GET /billing/rounds/{month}/ — a month's stops and progress in one request. */
+export interface BillingRound {
+  month: string;
+  period_start: string;
+  period_end: string;
+  total: number;
+  done: number;
+  remaining: number;
+  stops: BillingRoundStop[];
+  /** Present only on the POST create response: number of drafts created. */
+  created?: number;
+}
+
 /**
- * Entering a reading issues the bill, and the photo is the evidence behind it —
- * so it travels in the same multipart request and the server commits the two
- * together. A bill can't end up issued with no proof attached, which is what
- * uploading the photo as a second, separate call allowed.
+ * Payload for POST /api/electricity-bills/{id}/enter_reading/ (multipart).
+ *
+ * The photo is required and travels in the same request as the reading, so the
+ * server commits the two together. A bill can't end up issued with no proof
+ * attached, which is what uploading the photo as a second call allowed.
  */
 export interface EnterReadingInput {
   current_reading: string;
@@ -577,33 +605,4 @@ export interface DocumentUploadInput {
   related_model: DocumentTarget;
   related_id: number;
   document_type?: string;
-}
-
-/** One stop as the server reports it — see `GET /billing/rounds/{month}/`. */
-export interface RoundStopPayload {
-  flat: number;
-  flat_number: string;
-  meter: number | null;
-  previous_reading: string;
-  read: boolean;
-  bill: ElectricityBill | null;
-  blocked: string | null;
-  blocked_kind: 'apartment_type' | 'rate' | null;
-}
-
-/**
- * A month's round, joined server-side.
- *
- * Replaces walking flats + meters + bills in the browser: the bills list grows
- * every month and was being fetched whole, twenty rows per request, to use one
- * month of it.
- */
-export interface BillingRound {
-  month: string;
-  period_start: string;
-  period_end: string;
-  total: number;
-  done: number;
-  remaining: number;
-  stops: RoundStopPayload[];
 }

@@ -54,10 +54,11 @@ export function BillsTable({
         meta: { mobile: 'secondary' },
       },
       {
-        id: 'flat',
+        // The column id *is* the ordering field, so no sortField mapping is needed.
+        id: 'flat__flat_number',
         header: 'Flat',
         accessorFn: (r) => r.flatNumber,
-        meta: { mobile: 'primary', sortable: true, sortField: 'flat__flat_number' },
+        meta: { sortable: true, mobile: 'primary' },
       },
       {
         id: 'billing_period_end',
