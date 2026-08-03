@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, Check, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { PrintRoundButton } from '@/components/billing/print-round-button';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -158,6 +159,20 @@ export default function MeterRoundPage() {
               </p>
               <span className="shrink-0 text-xs font-medium text-primary">Set them all →</span>
             </Link>
+          )}
+
+          {/*
+           * Offered once anything has been read, not only at 100%: a round often
+           * gets walked over two evenings, and the bills issued on the first are
+           * printable straight away.
+           */}
+          {done > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-raised px-4 py-3">
+              <p className="text-sm text-muted">
+                <span className="font-medium tabular-nums text-ink">{done}</span> issued this month
+              </p>
+              <PrintRoundButton month={month} className="h-9 shrink-0 px-3 text-xs" />
+            </div>
           )}
 
           {visible.length === 0 ? (
