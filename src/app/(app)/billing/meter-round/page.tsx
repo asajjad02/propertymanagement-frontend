@@ -180,12 +180,8 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       try {
         const created = await createBill.mutateAsync({
           flat: stop.flatId,
-          meter: stop.meterId,
           billing_period_start: period.start,
           billing_period_end: period.end,
-          previous_reading: stop.previousReading,
-          // Recomputed server-side on issue; sent only to satisfy the payload.
-          previous_outstanding: '0',
         });
         billId = created.id;
       } catch {

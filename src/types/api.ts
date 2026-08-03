@@ -180,6 +180,8 @@ export interface Flat {
   floor_number: number;
   flat_type: string;
   occupancy_status: OccupancyStatus;
+  /** Read-only: the running reading on the flat's (one) meter. */
+  current_reading: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -188,7 +190,7 @@ export interface Flat {
 // account's single building when omitted. apartment_type_name is read-only.
 export type FlatInput = Omit<
   Flat,
-  'id' | 'created_at' | 'updated_at' | 'building' | 'apartment_type_name'
+  'id' | 'created_at' | 'updated_at' | 'building' | 'apartment_type_name' | 'current_reading'
 > & {
   building?: number;
 };
@@ -399,9 +401,11 @@ export interface ElectricityBill {
  * lifecycle fields are read-only server-side (set by the enter_reading action /
  * calculation service).
  */
+// Create only needs the flat and the period; the meter (one per flat),
+// previous_reading and previous_outstanding are all derived server-side.
 export type ElectricityBillInput = Pick<
   ElectricityBill,
-  'flat' | 'meter' | 'billing_period_start' | 'billing_period_end' | 'previous_reading' | 'previous_outstanding'
+  'flat' | 'billing_period_start' | 'billing_period_end'
 >;
 
 /**

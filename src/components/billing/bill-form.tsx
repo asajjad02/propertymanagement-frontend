@@ -7,7 +7,7 @@ import { Field } from '@/components/ui/field';
 import { FormActions } from '@/components/ui/form-actions';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useToast } from '@/components/ui/toast';
-import { electricityBillHooks, meterHooks } from '@/hooks/resources';
+import { electricityBillHooks } from '@/hooks/resources';
 import { useFlatsLookup } from '@/hooks/use-lookups';
 import { billingPeriodFor } from '@/lib/billing-period';
 import { toApiError } from '@/lib/errors';
@@ -17,22 +17,15 @@ import { numeric, shortDate } from '@/lib/format';
  * Create a draft electricity bill. The reading and derived charges are set later
  * via the meter round (or "Enter reading" on the bill), which issues the bill.
  *
- * Asks for the flat and nothing else. Everything the payload needs beyond that
- * is already known:
- *   - the meter — one per flat, so choosing it was a question with one answer
- *   - the period — the calendar month (see lib/billing-period)
- *   - previous_reading — `meter.current_reading`, the running value the backend
- *     maintains every time a reading is entered
- *   - previous_outstanding — recomputed server-side on issue, so whatever is
- *     posted here is discarded
- *
- * The derived values are shown read-only rather than hidden: the form should
- * state what it's about to do, not quietly assume it.
+ * Asks for the flat and nothing else. Everything else is derived server-side:
+ * the meter (one per flat), the period (the calendar month), the previous
+ * reading (the flat's running value), and previous_outstanding (recomputed on
+ * issue). The derived values are shown read-only so the form states what it's
+ * about to do rather than quietly assuming it.
  */
 export function BillForm({ onDone }: { onDone: () => void }) {
   const toast = useToast();
   const flats = useFlatsLookup();
-  const meters = meterHooks.useAll();
   const create = electricityBillHooks.useCreate();
   const [flat, setFlat] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -50,27 +43,19 @@ export function BillForm({ onDone }: { onDone: () => void }) {
     [flats.data],
   );
 
-  const meterForFlat = useMemo(
-    () => (flat ? (meters.data ?? []).find((m) => m.flat === Number(flat)) : undefined),
-    [meters.data, flat],
+  const selectedFlat = useMemo(
+    () => (flat ? (flats.data ?? []).find((f) => f.id === Number(flat)) : undefined),
+    [flats.data, flat],
   );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!meterForFlat) {
-      setError('This flat has no meter yet. Add one before billing it.');
-      return;
-    }
     try {
       await create.mutateAsync({
         flat: Number(flat),
-        meter: meterForFlat.id,
         billing_period_start: period.start,
         billing_period_end: period.end,
-        previous_reading: meterForFlat.current_reading,
-        // Recomputed server-side on issue; sent only to satisfy the payload.
-        previous_outstanding: '0',
       });
       toast.success('Draft bill created', 'Enter the meter reading to issue it.');
       onDone();
@@ -78,8 +63,6 @@ export function BillForm({ onDone }: { onDone: () => void }) {
       setError(toApiError(err).message);
     }
   }
-
-  const noMeter = !!flat && !meters.isPending && !meterForFlat;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -101,24 +84,20 @@ export function BillForm({ onDone }: { onDone: () => void }) {
       {flat && (
         <dl className="divide-y divide-hairline rounded-control border border-hairline px-3">
           <Row label="Period" value={`${shortDate(period.start)} → ${shortDate(period.end)}`} />
-          <Row label="Meter" value={meterForFlat ? meterForFlat.meter_number : '—'} />
           <Row
             label="Previous reading"
-            value={meterForFlat ? numeric(meterForFlat.current_reading) : '—'}
+            value={selectedFlat?.current_reading != null ? numeric(selectedFlat.current_reading) : '—'}
           />
         </dl>
       )}
 
-      {noMeter && (
-        <p className="text-sm text-danger">This flat has no meter yet. Add one before billing it.</p>
-      )}
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <FormActions>
         <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">
           Cancel
         </Button>
-        <Button type="submit" loading={create.isPending} disabled={!flat || noMeter}>
+        <Button type="submit" loading={create.isPending} disabled={!flat}>
           Create draft
         </Button>
       </FormActions>

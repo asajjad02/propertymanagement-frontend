@@ -2,9 +2,9 @@
 
 import { useMemo } from 'react';
 
-import { electricityBillHooks, meterHooks } from '@/hooks/resources';
+import { electricityBillHooks } from '@/hooks/resources';
 import { useFlatsLookup } from '@/hooks/use-lookups';
-import type { ElectricityBill, Meter } from '@/types/api';
+import type { ElectricityBill } from '@/types/api';
 
 /** `YYYY-MM` — the month a billing round covers. */
 export type MonthKey = string;
@@ -22,7 +22,6 @@ export function currentMonthKey(): MonthKey {
 export interface RoundStop {
   flatId: number;
   flatNumber: string;
-  meterId: number;
   /** What a new reading will be measured against. */
   previousReading: string;
   /** This month's bill, at any status. Null until the round creates one. */
@@ -38,20 +37,18 @@ export interface RoundStop {
 }
 
 /**
- * A billing round: one month × every occupied flat that has a meter.
+ * A billing round: one month × every occupied flat.
  *
- * Shared by the meter round and the Overview so the two always report the same
- * progress. All three queries are cached, so a second caller costs nothing.
+ * Every flat has exactly one meter, so the running reading comes off the flat
+ * (`current_reading`) — no need to load meters. Shared by the meter round and
+ * the Overview so the two always report the same progress; both queries are
+ * cached, so a second caller costs nothing.
  */
 export function useBillingRound(month: MonthKey) {
   const flats = useFlatsLookup();
-  const meters = meterHooks.useAll();
   const bills = electricityBillHooks.useAll();
 
   const stops = useMemo<RoundStop[]>(() => {
-    const meterByFlat = new Map<number, Meter>();
-    for (const m of meters.data ?? []) if (!meterByFlat.has(m.flat)) meterByFlat.set(m.flat, m);
-
     const billByFlat = new Map<number, ElectricityBill>();
     for (const b of bills.data ?? []) {
       if (monthKeyOf(b.billing_period_end) !== month) continue;
@@ -63,23 +60,19 @@ export function useBillingRound(month: MonthKey) {
     return (flats.data ?? [])
       .filter((f) => f.occupancy_status === 'occupied')
       .map((f) => {
-        const meter = meterByFlat.get(f.id);
-        if (!meter) return null;
         const bill = billByFlat.get(f.id) ?? null;
         return {
           flatId: f.id,
           flatNumber: f.flat_number,
-          meterId: meter.id,
-          // An existing bill carries its own baseline; otherwise the meter's
-          // running value is the baseline the backend has been maintaining.
-          previousReading: bill ? bill.previous_reading : meter.current_reading,
+          // An existing bill carries its own baseline; otherwise the flat's
+          // running reading is the baseline the backend has been maintaining.
+          previousReading: bill ? bill.previous_reading : (f.current_reading ?? '0'),
           bill,
           read: !!bill && bill.status !== 'draft',
         } satisfies RoundStop;
       })
-      .filter((s): s is RoundStop => s !== null)
       .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
-  }, [flats.data, meters.data, bills.data, month]);
+  }, [flats.data, bills.data, month]);
 
   const done = stops.filter((s) => s.read).length;
 
@@ -88,7 +81,7 @@ export function useBillingRound(month: MonthKey) {
     total: stops.length,
     done,
     remaining: stops.length - done,
-    isPending: flats.isPending || meters.isPending || bills.isPending,
+    isPending: flats.isPending || bills.isPending,
   };
 }
 
