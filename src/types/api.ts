@@ -411,10 +411,17 @@ export type ElectricityBillInput = Pick<
 >;
 
 /** Payload for POST /api/electricity-bills/{id}/enter_reading/. */
+/**
+ * Entering a reading issues the bill, and the photo is the evidence behind it —
+ * so it travels in the same multipart request and the server commits the two
+ * together. A bill can't end up issued with no proof attached, which is what
+ * uploading the photo as a second, separate call allowed.
+ */
 export interface EnterReadingInput {
   current_reading: string;
   reading_date: string;
   notes?: string;
+  photo: File;
 }
 
 export interface MaintenanceCharge {

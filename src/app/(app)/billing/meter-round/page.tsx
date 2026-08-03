@@ -4,7 +4,6 @@ import { ArrowLeft, Camera, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { uploadDocument } from '@/api/documents';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,6 +16,7 @@ import { electricityBillHooks, meterHooks, useEnterBillReading } from '@/hooks/r
 import { currentMonthKey, useBillingRound, type MonthKey, type RoundStop } from '@/hooks/use-billing-round';
 import { cn } from '@/lib/cn';
 import { billingPeriodFor } from '@/lib/billing-period';
+import { toApiError } from '@/lib/errors';
 import { numeric } from '@/lib/format';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -48,7 +48,12 @@ export default function MeterRoundPage() {
 
   // Stops that would have to invent a baseline before they can be billed — the
   // same test MeterRow makes per row, counted here to offer the bulk screen.
-  const needBaseline = stops.filter((s) => !s.bill && Number(s.previousReading) === 0).length;
+  // Includes drafts anchored at zero: those would bill from nothing too.
+  const needBaseline = stops.filter(
+    (s) =>
+      Number(s.previousReading) === 0 &&
+      (!s.bill || (s.bill.status === 'draft' && Number(s.bill.previous_reading) === 0)),
+  ).length;
 
   return (
     <div className="space-y-4 md:mx-auto md:max-w-2xl md:space-y-6">
@@ -179,10 +184,12 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const enterReading = useEnterBillReading();
   const createBill = electricityBillHooks.useCreate();
   const patchMeter = meterHooks.usePatch();
+  const deleteBill = electricityBillHooks.useDelete();
   const [reading, setReading] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const { flatNumber } = stop;
-  const working = createBill.isPending || enterReading.isPending || patchMeter.isPending;
+  const working =
+    createBill.isPending || enterReading.isPending || patchMeter.isPending || deleteBill.isPending;
 
   /*
    * A meter that has never been read sits at 0, but the dial on the wall
@@ -190,11 +197,15 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
    * entire lifetime, so the first time round a flat we ask what it currently
    * reads and use that as the baseline.
    *
-   * Only offered before the bill exists: once a draft is created its
-   * `previous_reading` is fixed, and quietly changing it would move a number
-   * the bill has already been built on.
+   * A draft that was created before anyone set a baseline is anchored at 0 too,
+   * and its `previous_reading` is server-owned and read-only — so it can't be
+   * corrected in place, only replaced. Ask for the baseline here as well rather
+   * than let the round quietly bill from zero.
    */
-  const needsBaseline = !stop.bill && Number(stop.previousReading) === 0;
+  const draftAnchoredAtZero =
+    stop.bill?.status === 'draft' && Number(stop.bill.previous_reading) === 0;
+  const needsBaseline =
+    Number(stop.previousReading) === 0 && (!stop.bill || draftAnchoredAtZero);
   const [baseline, setBaseline] = useState('');
   const effectivePrevious = needsBaseline && baseline ? baseline : stop.previousReading;
 
@@ -211,6 +222,21 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     // what lets the round cover every occupied flat instead of only the ones
     // someone had already prepared a bill for.
     let billId = stop.bill?.id;
+
+    // Replace a draft that's anchored at zero once we know the real baseline. A
+    // draft holds nothing but the flat and the period, so recreating it against
+    // the corrected meter loses no work — and it's the only way to move a
+    // `previous_reading` the server owns.
+    if (billId !== undefined && draftAnchoredAtZero && baseline) {
+      try {
+        await deleteBill.mutateAsync(billId);
+        billId = undefined;
+      } catch (err) {
+        toast.error('Could not set the starting reading', `${flatNumber}: ${toApiError(err).message}`);
+        return;
+      }
+    }
+
     if (billId === undefined) {
       const [y, m] = month.split('-').map(Number);
       const period = billingPeriodFor(new Date(y, m - 1, 1));
@@ -240,28 +266,22 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       }
     }
 
+    /*
+     * Reading and photo go up together: the server stores the reading, issues
+     * the bill and records the photo in one transaction, so a failed upload
+     * rolls the issue back with it. This used to be two calls, which could leave
+     * a live bill behind with no evidence attached — and, once the endpoint went
+     * multipart-only, failed outright.
+     */
     try {
       await enterReading.mutateAsync({
         id: billId,
-        payload: { current_reading: reading, reading_date: TODAY },
+        payload: { current_reading: reading, reading_date: TODAY, photo },
       });
-    } catch {
-      toast.error('Could not issue bill', `${flatNumber}: check the reading is above ${numeric(effectivePrevious)}.`);
-      return;
-    }
-    try {
-      await uploadDocument({
-        file: photo,
-        related_model: 'electricity_bill',
-        related_id: billId,
-        document_type: 'meter_photo',
-      });
-    } catch {
-      // The bill is already issued at this point — say so plainly and point at
-      // the fix rather than pretending the whole thing failed.
-      toast.warning(
-        'Bill issued, photo failed',
-        `${flatNumber}: reading saved. Attach the meter photo from the bill.`,
+    } catch (err) {
+      toast.error(
+        'Could not issue bill',
+        toApiError(err).message || `${flatNumber}: check the reading is above ${numeric(effectivePrevious)}.`,
       );
       return;
     }

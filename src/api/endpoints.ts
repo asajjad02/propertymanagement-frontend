@@ -106,11 +106,23 @@ export async function bulkCreateFlats(payload: BulkFlatsInput): Promise<BulkFlat
   return data;
 }
 
-/** POST /electricity-bills/{id}/enter_reading/ — records the reading and issues the bill. */
+/**
+ * POST /electricity-bills/{id}/enter_reading/ — records the reading and issues
+ * the bill.
+ *
+ * Multipart, not JSON: the meter photo is required and commits in the same
+ * transaction as the reading, so the endpoint takes only form data. The
+ * Document row is created server-side — no separate upload call.
+ */
 export async function enterBillReading(id: number, payload: EnterReadingInput): Promise<ElectricityBill> {
+  const form = new FormData();
+  form.append('current_reading', payload.current_reading);
+  form.append('reading_date', payload.reading_date);
+  if (payload.notes) form.append('notes', payload.notes);
+  form.append('photo', payload.photo);
   const { data } = await apiClient.post<ElectricityBill>(
     `${electricityBills.path}${id}/enter_reading/`,
-    payload,
+    form,
   );
   return data;
 }

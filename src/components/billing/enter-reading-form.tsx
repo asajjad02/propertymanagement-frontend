@@ -19,15 +19,20 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
   const [reading, setReading] = useState('');
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!photo) {
+      setError('A photo of the meter is required to issue the bill.');
+      return;
+    }
     try {
       await enterReading.mutateAsync({
         id: billId,
-        payload: { current_reading: reading, reading_date: date, notes: notes || undefined },
+        payload: { current_reading: reading, reading_date: date, notes: notes || undefined, photo },
       });
       toast.success('Reading recorded', 'Bill issued.');
       onDone();
@@ -46,6 +51,23 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
           {(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />}
         </Field>
       </div>
+      {/*
+       * Required, not optional: the reading issues the bill, and a bill that
+       * can't be evidenced can't be defended if a resident disputes it. It ships
+       * in the same request as the reading, so the two commit together.
+       */}
+      <Field label="Meter photo" required hint="Attached to the bill as evidence">
+        {(id) => (
+          <Input
+            id={id}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            required
+            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+          />
+        )}
+      </Field>
       <Field label="Notes" hint="Optional">
         {(id) => <Textarea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}
       </Field>
@@ -53,7 +75,7 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
       {error && <p className="text-sm text-danger">{error}</p>}
       <FormActions>
         <Button type="button" variant="secondary" onClick={onDone} className="hidden md:inline-flex">Cancel</Button>
-        <Button type="submit" loading={enterReading.isPending} disabled={enterReading.isPending || !reading}>Enter reading & issue</Button>
+        <Button type="submit" loading={enterReading.isPending} disabled={enterReading.isPending || !reading || !photo}>Enter reading & issue</Button>
       </FormActions>
     </form>
   );

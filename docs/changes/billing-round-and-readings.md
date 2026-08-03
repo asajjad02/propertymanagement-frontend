@@ -38,6 +38,43 @@ basis shouldn't be issued.
 
 ---
 
+## Issuing a bill was broken outright
+
+Found while checking a live account. `enter_reading` on the backend takes
+`parser_classes = [MultiPartParser, FormParser]` and requires `photo`. The
+frontend was posting **JSON with no photo**, then uploading the photo as a second
+`POST /documents/` call. Against the current backend that fails twice over: a
+JSON body to a form-only parser is a 415, and even as form data the missing
+`photo` is a 400. **No bill could be issued from either the meter round or the
+bill detail screen.**
+
+Fixed by sending the reading and the photo in one multipart request
+(`src/api/endpoints.ts`), and dropping the follow-up upload — the server creates
+the `Document` row itself, inside the same transaction as the reading and the
+issue. That also closes the hole the two-call version left open: a bill could end
+up issued with the photo upload failed, i.e. live and unevidenced.
+
+`EnterReadingInput` now carries `photo: File`, so the compiler finds every caller
+rather than leaving one to fail at runtime. The bill-detail form
+(`enter-reading-form.tsx`) gained the required photo field it never had.
+
+## Drafts anchored at zero would bill the meter's lifetime
+
+A draft bill created before anyone set an opening reading has
+`previous_reading = 0`, and that field is server-owned and read-only — so it
+can't be corrected in place. The meter round only offered a baseline when no
+bill existed yet (`!stop.bill`), so these drafts slipped through and would bill
+`current − 0`: the meter's entire lifetime charged to whoever lives there now.
+Three such drafts were sitting in the live account checked below.
+
+`meter-round/page.tsx` now treats a zero-anchored draft as needing a baseline
+too, and when one is given, **replaces** the draft: delete, write the baseline to
+the meter, recreate. A draft carries nothing but the flat and the period, so
+recreating loses no work — and replacement is the only way to move a number the
+server owns. The count in the "set them all" banner uses the same test.
+
+---
+
 ## Frontend changes
 
 ### New: bulk opening readings
