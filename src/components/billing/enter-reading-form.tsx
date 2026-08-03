@@ -3,6 +3,7 @@
 import { format } from 'date-fns';
 import { useState } from 'react';
 
+import { MeterPhotoField } from '@/components/billing/meter-photo-field';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { FormActions } from '@/components/ui/form-actions';
@@ -51,17 +52,18 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
           {(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />}
         </Field>
       </div>
-      <Field label="Meter photo" required hint="Required — the evidence behind the reading">
-        {(id) => (
-          <Input
-            id={id}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-            required
-          />
-        )}
+      {/*
+       * Required, not optional: the reading issues the bill, and a bill that
+       * can't be evidenced can't be defended if a resident disputes it. It ships
+       * in the same request as the reading, so the two commit together.
+       *
+       * Goes through MeterPhotoField rather than a bare file input. A plain input
+       * with `capture="environment"` sends a phone straight to the camera with no
+       * way to reach an existing photo, and hands over whatever the library holds
+       * — HEIC on an iPhone, which the API rejects.
+       */}
+      <Field label="Meter photo" required hint="The evidence behind the reading">
+        {() => <MeterPhotoField value={photo} onChange={setPhoto} />}
       </Field>
       <Field label="Notes" hint="Optional">
         {(id) => <Textarea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { PrintRoundButton } from '@/components/billing/print-round-button';
+import { currentMonthKey } from '@/hooks/use-billing-round';
 import { AppBarAction, PageChrome } from '@/components/shell/page-chrome';
 import { BILL_SORT_OPTIONS, BillsTable } from '@/components/billing/bills-table';
 import { NewBillButton } from '@/components/billing/new-bill-button';
@@ -91,6 +93,7 @@ export default function BillingListPage() {
                 Meter round
               </Link>
             </Button>
+            <PrintRoundButton month={currentMonthKey()} />
             <NewBillButton />
           </>
         }

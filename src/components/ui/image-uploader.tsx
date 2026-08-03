@@ -1,18 +1,24 @@
 'use client';
 
 import { ImagePlus, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/cn';
+import { toJpegFile } from '@/lib/image';
 
-const DEFAULT_ACCEPT = 'image/png,image/jpeg';
+/*
+ * Anything the browser can decode, not just PNG/JPEG. What's picked and what's
+ * uploaded are no longer the same file: every image is re-encoded as a JPEG
+ * (see lib/image), so an iPhone's HEIC and a 48 MP original both arrive as
+ * something the API accepts and small enough to send.
+ */
+const DEFAULT_ACCEPT = 'image/*';
 
 export interface ImageUploaderProps {
   value: File[];
   onChange: (files: File[]) => void;
   /** Comma-separated MIME allowlist (default PNG/JPEG). */
   accept?: string;
-  maxSizeMB?: number;
   /** Max number of images (default 10). */
   max?: number;
   className?: string;
@@ -23,40 +29,53 @@ export function ImageUploader({
   value,
   onChange,
   accept = DEFAULT_ACCEPT,
-  maxSizeMB = 10,
   max = 10,
   className,
 }: ImageUploaderProps) {
   const [error, setError] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const urls = value.map((file) => URL.createObjectURL(file));
-    setPreviews(urls);
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, [value]);
+  /*
+   * Derived, not stored. Creating the URLs in an effect and setting state meant a
+   * render with previews one step behind the files — a newly added photo showed
+   * the previous one's image until the effect caught up. The effect that remains
+   * only revokes, which is what an effect is for.
+   */
+  const previews = useMemo(() => value.map((file) => URL.createObjectURL(file)), [value]);
+  useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
 
-  const allowed = accept.split(',');
-
-  function add(files: FileList | null) {
+  /*
+   * Converted rather than validated. Rejecting a photo for its format or its size
+   * is a dead end on a phone — it's the only copy they have — so each one is
+   * re-encoded to a JPEG within the size limit instead. Only a format the browser
+   * genuinely can't read is refused, and then it says which ones.
+   */
+  async function add(files: FileList | null) {
     if (!files?.length) return;
     setError(null);
-    const accepted: File[] = [];
-    for (const file of Array.from(files)) {
-      if (!allowed.includes(file.type)) {
-        setError('Only PNG or JPEG images are allowed.');
-        continue;
-      }
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        setError(`Each image must be under ${maxSizeMB} MB.`);
-        continue;
-      }
-      accepted.push(file);
-    }
+    setBusy(true);
     const room = max - value.length;
-    if (accepted.length > room) setError(`You can add up to ${max} images.`);
-    onChange([...value, ...accepted.slice(0, room)]);
+    const picked = Array.from(files).slice(0, room);
+    if (Array.from(files).length > room) setError(`You can add up to ${max} images.`);
+
+    const converted: File[] = [];
+    const failed: string[] = [];
+    for (const file of picked) {
+      try {
+        converted.push(await toJpegFile(file));
+      } catch {
+        failed.push(file.name);
+      }
+    }
+    if (failed.length) {
+      setError(
+        `Couldn’t read ${failed.join(', ')}. This browser can’t open that format — ` +
+          'try a JPEG or PNG.',
+      );
+    }
+    setBusy(false);
+    if (converted.length) onChange([...value, ...converted]);
   }
 
   const atMax = value.length >= max;
@@ -89,7 +108,7 @@ export function ImageUploader({
             onDrop={(e) => {
               e.preventDefault();
               setDragging(false);
-              add(e.dataTransfer.files);
+              void add(e.dataTransfer.files);
             }}
             className={cn(
               'flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-control border border-dashed text-center',
@@ -97,13 +116,26 @@ export function ImageUploader({
               dragging ? 'border-primary bg-primary-soft/40 text-ink' : 'border-hairline bg-raised',
             )}
           >
-            <ImagePlus className="h-4 w-4" />
-            <span className="text-[0.625rem] leading-tight">Add</span>
-            <input type="file" accept={accept} multiple className="hidden" onChange={(e) => add(e.target.files)} />
+            <ImagePlus className={cn('h-4 w-4', busy && 'animate-pulse')} />
+            <span className="text-[0.625rem] leading-tight">{busy ? 'Working…' : 'Add'}</span>
+            <input
+              type="file"
+              accept={accept}
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                void add(e.target.files);
+                // Reset, so re-picking the same file still fires a change.
+                e.target.value = '';
+              }}
+            />
           </label>
         )}
       </div>
-      <p className="mt-1 text-xs text-faint">PNG or JPEG, up to {maxSizeMB} MB each · {value.length}/{max}</p>
+      {/* No format or size rule to state: photos are converted to fit, not refused. */}
+      <p className="mt-1 text-xs text-faint">
+        Photos are resized for upload · {value.length}/{max}
+      </p>
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   );

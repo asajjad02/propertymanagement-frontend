@@ -10,9 +10,16 @@ import { Modal } from '@/components/ui/modal';
 import { Select } from '@/components/ui/select';
 import { useUploadDocument } from '@/hooks/use-documents';
 import { toApiError } from '@/lib/errors';
+import { toJpegFile } from '@/lib/image';
 import type { DocumentTarget } from '@/types/api';
 
-const ACCEPT = 'application/pdf,image/png,image/jpeg';
+/*
+ * Images broadly, PDFs as they are. An iPhone hands over HEIC, which the API
+ * doesn't accept — so an image is re-encoded here (see lib/image) rather than
+ * refused. A PDF is passed through untouched: it isn't an image and mustn't be
+ * turned into one.
+ */
+const ACCEPT = 'application/pdf,image/*';
 const MAX_MB = 10;
 const DEFAULT_TYPES = ['CNIC', 'Tenancy Agreement', 'Other'];
 
@@ -36,9 +43,28 @@ export function UploadDocumentDialog({
   const [type, setType] = useState(documentTypes[0] ?? '');
   const [error, setError] = useState<string | null>(null);
 
-  function pick(f: File | null) {
+  const [preparing, setPreparing] = useState(false);
+
+  async function pick(f: File | null) {
     setError(null);
-    if (f && f.size > MAX_MB * 1024 * 1024) return setError(`File must be under ${MAX_MB} MB.`);
+    if (!f) return setFile(null);
+
+    if (f.type.startsWith('image/')) {
+      // Converted, not measured: a phone photo clears 10 MB easily, and rejecting
+      // it is a dead end when it's the only copy someone has.
+      setPreparing(true);
+      try {
+        setFile(await toJpegFile(f));
+      } catch {
+        setError('That image couldn’t be read. Try a JPEG, a PNG, or a PDF.');
+      } finally {
+        setPreparing(false);
+      }
+      return;
+    }
+
+    // A PDF can't be shrunk here, so the limit still applies to it.
+    if (f.size > MAX_MB * 1024 * 1024) return setError(`File must be under ${MAX_MB} MB.`);
     setFile(f);
   }
 
@@ -56,7 +82,7 @@ export function UploadDocumentDialog({
   }
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Upload document" description="PDF, PNG or JPEG, up to 10 MB.">
+    <Modal open={open} onOpenChange={onOpenChange} title="Upload document" description="A photo or a PDF. Photos are resized for upload.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Type">
           {(id) => (
@@ -68,7 +94,7 @@ export function UploadDocumentDialog({
           {() => (
             <>
               <input ref={inputRef} type="file" accept={ACCEPT} className="hidden"
-                onChange={(e) => pick(e.target.files?.[0] ?? null)} />
+                onChange={(e) => void pick(e.target.files?.[0] ?? null)} />
               <button type="button" onClick={() => inputRef.current?.click()}
                 className="flex w-full items-center gap-2 rounded-control border border-dashed border-hairline bg-raised px-3 py-3 text-sm text-muted hover:border-primary hover:text-ink">
                 <Paperclip className="h-4 w-4" />
@@ -80,7 +106,13 @@ export function UploadDocumentDialog({
         {error && <p className="text-sm text-danger">{error}</p>}
         <FormActions>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} className="hidden md:inline-flex">Cancel</Button>
-          <Button type="submit" loading={upload.isPending} disabled={upload.isPending || !file}>Upload</Button>
+          <Button
+            type="submit"
+            loading={upload.isPending || preparing}
+            disabled={upload.isPending || preparing || !file}
+          >
+            {preparing ? 'Preparing…' : 'Upload'}
+          </Button>
         </FormActions>
       </form>
     </Modal>
