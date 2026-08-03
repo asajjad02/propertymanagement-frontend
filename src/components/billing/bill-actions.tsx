@@ -97,10 +97,18 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
        * on file. Opened in a tab rather than downloaded so it goes straight to
        * the print dialog; the blob URL is revoked once the tab has it.
        */}
-      <Button variant="secondary" size="sm" loading={printing} disabled={printing} onClick={onPrint}>
-        <Printer className="h-4 w-4" />
-        Print
-      </Button>
+      {/*
+       * Not on a draft. A draft has no reading and no amounts, so its sheet is a
+       * statement for Rs 0.00 — the same reason drafts are left out of the
+       * whole-month print. Handing that to a resident is worse than handing them
+       * nothing.
+       */}
+      {bill.status !== 'draft' && (
+        <Button variant="secondary" size="sm" loading={printing} disabled={printing} onClick={onPrint}>
+          <Printer className="h-4 w-4" />
+          Print
+        </Button>
+      )}
 
       {canWrite && bill.status === 'draft' && (
         <Button size="sm" onClick={() => setReading(true)}>
