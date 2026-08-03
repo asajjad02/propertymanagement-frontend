@@ -1,12 +1,11 @@
 'use client';
 
-import { CheckCheck, Download, FileInput, Wallet } from 'lucide-react';
+import { CheckCheck, FileInput, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
-import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
 import { useMarkElectricityBillPaid } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
@@ -16,7 +15,7 @@ import type { ElectricityBill } from '@/types/api';
 import { EnterReadingForm } from './enter-reading-form';
 import { RecordPaymentForm } from './record-payment-form';
 
-/** Bill header actions, gated by status and role. PDF is deferred (disabled). */
+/** Bill header actions, gated by status and role. (Download lives on the bill document / send panel.) */
 export function BillActions({ bill }: { bill: ElectricityBill }) {
   const { hasRole } = useAuth();
   const toast = useToast();
@@ -39,14 +38,6 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
 
   return (
     <>
-      {/* PDF export is part of the deferred pipeline. */}
-      <Tooltip content="PDF export isn’t available yet" side="bottom">
-        <Button variant="secondary" size="sm" disabled>
-          <Download className="h-4 w-4" />
-          PDF
-        </Button>
-      </Tooltip>
-
       {canWrite && bill.status === 'draft' && (
         <Button size="sm" onClick={() => setReading(true)}>
           <FileInput className="h-4 w-4" />
