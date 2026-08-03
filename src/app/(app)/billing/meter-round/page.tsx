@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Camera, Check } from 'lucide-react';
+import { ArrowLeft, Camera, Check, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
@@ -323,7 +323,7 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
 
       {/* No history for this meter yet — ask what it reads now so the first
           bill charges the month, not the meter's whole life. */}
-      {needsBaseline && (
+      {needsBaseline && !stop.blocked && (
         <div className="mt-2.5">
           <Input
             type="number"
@@ -341,6 +341,22 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
         </div>
       )}
 
+      {/*
+       * Say it before the walk, not after the photo: a blocked stop can't be
+       * issued no matter what's typed, so the inputs would only waste the trip.
+       */}
+      {stop.blocked ? (
+        <div className="mt-2 flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
+          <p className="text-xs text-ink-secondary">
+            {stop.blocked}{' '}
+            <Link href={`/flats/${stop.flatId}`} className="font-medium text-primary underline">
+              Fix it on the flat
+            </Link>
+          </p>
+        </div>
+      ) : (
+      <>
       {/*
        * Two rows on a phone. Cramming reading + camera + Issue onto one 390px
        * line left the number field about 200px wide and the button barely
@@ -399,6 +415,8 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
         <p className="mt-1.5 text-xs text-muted">
           {reading ? 'Photo of the meter required to issue.' : 'Enter the reading and photograph the meter.'}
         </p>
+      )}
+      </>
       )}
     </li>
   );

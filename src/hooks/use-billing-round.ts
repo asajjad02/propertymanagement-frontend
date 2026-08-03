@@ -35,6 +35,15 @@ export interface RoundStop {
    * would happily issue a second bill for the same month.
    */
   read: boolean;
+  /**
+   * Why this stop can't be billed yet, or null. Server-decided, because the
+   * server is what will refuse it: a flat with no apartment type has no
+   * maintenance basis, and no configured rate means no electricity charge.
+   *
+   * Surfaced on the row so the round says so before anyone walks to the meter,
+   * rather than 400-ing once the photo is taken and the reading typed.
+   */
+  blocked: string | null;
 }
 
 /**
@@ -76,6 +85,13 @@ export function useBillingRound(month: MonthKey) {
           // An existing bill carries its own baseline; otherwise the meter's
           // running value is the baseline the backend has been maintaining.
           previousReading: bill ? bill.previous_reading : meter.current_reading,
+          // Mirrors the server's own test (billing/rounds.py `_blocked`). Rates
+          // aren't in this hook's queries, so only the flat-level cause is
+          // checked here; the server still refuses the other case.
+          blocked:
+            f.apartment_type == null
+              ? 'This flat has no apartment type, so its maintenance charge is unknown.'
+              : null,
           bill,
           read: !!bill && bill.status !== 'draft',
         } satisfies RoundStop;
