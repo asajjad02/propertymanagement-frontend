@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/cn';
+import { decodeImage } from '@/lib/image';
 
 /** 4:3 — a meter dial is wider than tall, and it matches what phones shoot. */
 const ASPECT = 4 / 3;
@@ -46,12 +47,14 @@ export function MeterPhotoField({
     if (!file) return;
     setError(null);
     try {
-      // `from-image` applies the EXIF rotation, so a portrait shot doesn't come
-      // out sideways — the canvas ignores EXIF otherwise.
-      setSource(await createImageBitmap(file, { imageOrientation: 'from-image' }));
+      // Shared with every other image upload — one decode path, so EXIF handling
+      // and format support can't differ between here and lib/image.
+      setSource(await decodeImage(file));
     } catch {
-      // Android Chrome can't decode HEIC. Say so, rather than letting the server
-      // reject it later with a content-type error nobody can act on.
+      // Safari reads HEIC; Chrome and Firefox don't. So this is the path when an
+      // iPhone photo is uploaded from a desktop, not from the phone itself. Say so
+      // here rather than letting the server reject it later with a content-type
+      // error nobody can act on.
       setError('That image couldn’t be read. Take a photo, or pick a JPEG or PNG.');
     }
   }
