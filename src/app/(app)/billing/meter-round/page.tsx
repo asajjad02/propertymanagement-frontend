@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowLeft, Camera, Check, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Check, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { MeterPhotoField } from '@/components/billing/meter-photo-field';
 import { PrintRoundButton } from '@/components/billing/print-round-button';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
@@ -389,27 +390,9 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
           className="h-14 flex-1 text-lg tabular-nums sm:h-12 sm:text-base"
           aria-label={`${flatNumber} current reading`}
         />
-        {/* Required, so it looks unfinished until it's done rather than merely
-            available — a plain outline reads as optional. */}
-        <label
-          className={cn(
-            'flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-control border',
-            'transition-colors sm:h-12 sm:w-12',
-            photo
-              ? 'border-primary bg-primary-soft text-primary-text'
-              : 'border-dashed border-muted/60 text-ink-secondary hover:border-muted',
-          )}
-          aria-label={photo ? 'Meter photo attached — tap to retake' : 'Capture meter photo (required)'}
-        >
-          {photo ? <Check className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-          />
-        </label>
+        {/* Camera or library, then framed and re-encoded before it's held —
+            see MeterPhotoField for why that isn't just cosmetic. */}
+        <MeterPhotoField value={photo} onChange={setPhoto} compact />
       </div>
 
       <Button

@@ -3,6 +3,7 @@
 import { format } from 'date-fns';
 import { useState } from 'react';
 
+import { MeterPhotoField } from '@/components/billing/meter-photo-field';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { FormActions } from '@/components/ui/form-actions';
@@ -57,16 +58,7 @@ export function EnterReadingForm({ billId, onDone }: { billId: number; onDone: (
        * in the same request as the reading, so the two commit together.
        */}
       <Field label="Meter photo" required hint="Attached to the bill as evidence">
-        {(id) => (
-          <Input
-            id={id}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            required
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-          />
-        )}
+        {() => <MeterPhotoField value={photo} onChange={setPhoto} />}
       </Field>
       <Field label="Notes" hint="Optional">
         {(id) => <Textarea id={id} value={notes} onChange={(e) => setNotes(e.target.value)} />}
