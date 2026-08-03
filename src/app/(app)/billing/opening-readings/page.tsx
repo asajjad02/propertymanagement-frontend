@@ -19,10 +19,6 @@ import { flatHooks, meterHooks } from '@/hooks/resources';
 import { cn } from '@/lib/cn';
 import { toApiError } from '@/lib/errors';
 
-/** How many PATCHes are in flight at once — enough to be quick, few enough
- *  that fifty flats don't arrive as fifty simultaneous connections. */
-const BATCH = 6;
-
 type Row = { meterId: number; flatNumber: string; current: string; isSet: boolean };
 
 /**
@@ -47,7 +43,8 @@ export default function OpeningReadingsPage() {
   const [query, setQuery] = useState('');
   const [unsetOnly, setUnsetOnly] = useState(true);
   const [values, setValues] = useState<Record<number, string>>({});
-  const [failed, setFailed] = useState<Set<number>>(new Set());
+  // Meters the server declined to touch: they already anchor an issued bill.
+  const [skipped, setSkipped] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
 
   const loading = meters.isPending || flats.isPending;
@@ -80,56 +77,50 @@ export default function OpeningReadingsPage() {
     [values],
   );
 
+  /*
+   * One request for the whole set, not a PATCH per flat. The server applies them
+   * in a single transaction, so the outcome is "all of them" or "none of them" —
+   * never a half-set that leaves some flats billing from zero with no way to tell
+   * which. Meters that already have an issued bill come back in `skipped`; those
+   * readings anchor a bill that exists, so they're reported rather than replaced.
+   */
   async function save() {
     setSaving(true);
-    setFailed(new Set());
-    const errors: { flatNumber: string; message: string }[] = [];
-    const stillFailed = new Set<number>();
-    const byId = new Map(rows.map((r) => [r.meterId, r]));
-
-    // Batched rather than Promise.all over all fifty, and each failure is caught
-    // per row: one bad reading must not throw away the other forty-nine writes.
-    for (let i = 0; i < edits.length; i += BATCH) {
-      const slice = edits.slice(i, i + BATCH);
-      await Promise.all(
-        slice.map(async ([id, value]) => {
-          const meterId = Number(id);
-          try {
-            await api.meters.patch(meterId, { current_reading: value.trim() });
-          } catch (err) {
-            stillFailed.add(meterId);
-            errors.push({
-              flatNumber: byId.get(meterId)?.flatNumber ?? String(meterId),
-              message: toApiError(err).message,
-            });
-          }
-        }),
+    setSkipped(new Set());
+    try {
+      const result = await api.setOpeningReadings(
+        edits.map(([id, value]) => ({ meter: Number(id), current_reading: value.trim() })),
       );
-    }
+      await qc.invalidateQueries({ queryKey: meterHooks.keys.all });
 
-    await qc.invalidateQueries({ queryKey: meterHooks.keys.all });
-    setSaving(false);
-    setFailed(stillFailed);
+      const refused = new Set(result.skipped.map((s) => s.meter));
+      setSkipped(refused);
+      // Clear only what landed, so the rows still needing attention keep their
+      // typed value instead of having to be entered again.
+      setValues((prev) => {
+        const next: Record<number, string> = {};
+        for (const id of refused) next[id] = prev[Number(id)];
+        return next;
+      });
 
-    const saved = edits.length - errors.length;
-    // Keep the ones that saved out of the form, so a retry only re-sends the
-    // failures instead of rewriting readings that already landed.
-    setValues((prev) => {
-      const next: Record<number, string> = {};
-      for (const id of stillFailed) next[id] = prev[id];
-      return next;
-    });
-
-    if (errors.length === 0) {
-      toast.success(`${saved} opening ${saved === 1 ? 'reading' : 'readings'} saved`);
-    } else {
-      toast.error(
-        `${saved} saved, ${errors.length} failed`,
-        `${errors
-          .slice(0, 3)
-          .map((e) => `${e.flatNumber}: ${e.message}`)
-          .join(' · ')}${errors.length > 3 ? ` · and ${errors.length - 3} more` : ''}`,
-      );
+      if (result.skipped.length === 0) {
+        toast.success(
+          `${result.updated} opening ${result.updated === 1 ? 'reading' : 'readings'} saved`,
+        );
+      } else {
+        toast.warning(
+          `${result.updated} saved, ${result.skipped.length} left alone`,
+          `${result.skipped
+            .slice(0, 3)
+            .map((s) => s.flat_number)
+            .join(', ')}${result.skipped.length > 3 ? ` and ${result.skipped.length - 3} more` : ''} ` +
+            'already have an issued bill. Delete it to re-read that flat.',
+        );
+      }
+    } catch (err) {
+      toast.error('Nothing was saved', toApiError(err).message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -188,7 +179,7 @@ export default function OpeningReadingsPage() {
                 key={row.meterId}
                 className={cn(
                   'flex items-center gap-3 px-4 py-2.5',
-                  failed.has(row.meterId) && 'bg-danger-soft',
+                  skipped.has(row.meterId) && 'bg-warn-soft',
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -199,10 +190,10 @@ export default function OpeningReadingsPage() {
                       Reads {row.current}
                     </p>
                   )}
-                  {failed.has(row.meterId) && (
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-danger">
+                  {skipped.has(row.meterId) && (
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-warn">
                       <TriangleAlert className="h-3 w-3" />
-                      Didn’t save — try again
+                      Already billed — delete the bill to re-read this flat
                     </p>
                   )}
                 </div>

@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
-import { electricityBillHooks, meterHooks, useMarkElectricityBillPaid } from '@/hooks/resources';
+import { electricityBillHooks, useMarkElectricityBillPaid } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
 import type { ElectricityBill } from '@/types/api';
@@ -24,9 +24,6 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
   const router = useRouter();
   const markPaid = useMarkElectricityBillPaid();
   const remove = electricityBillHooks.useDelete();
-  const patchMeter = meterHooks.usePatch();
-  // Already in cache — the detail page fetches the same meter.
-  const meter = meterHooks.useItem(bill.meter, { enabled: bill.meter != null });
   const [reading, setReading] = useState(false);
   const [payment, setPayment] = useState(false);
   const [confirmPaid, setConfirmPaid] = useState(false);
@@ -39,27 +36,15 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
 
   /*
    * Entering a reading advanced the meter, and a replacement bill derives its
-   * previous_reading from the meter — so deleting alone would make the recreated
-   * bill read "0 units consumed". Wind the meter back to this bill's baseline,
-   * but only while this bill's reading is still the meter's latest: if a later
-   * bill has since moved it on, rolling back would corrupt that one instead.
+   * previous_reading from the meter — so a bare delete would make the recreated
+   * bill read "0 units consumed". The server winds the meter back to this bill's
+   * baseline and drops the reading, in the same transaction as the delete, and
+   * declines to do so if a later bill has already moved the meter on. One
+   * request: this used to be two, which could half-apply.
    */
-  const isLatestReading =
-    bill.current_reading != null &&
-    meter.data != null &&
-    Number(meter.data.current_reading) === Number(bill.current_reading);
-
   async function onDelete() {
     try {
-      // Delete first: that's the intent. A failed rollback afterwards is
-      // recoverable (and reported), a wound-back meter with a live bill is not.
       await remove.mutateAsync(bill.id);
-      if (isLatestReading) {
-        await patchMeter.mutateAsync({
-          id: bill.meter,
-          payload: { current_reading: bill.previous_reading },
-        });
-      }
       toast.success(`Bill #${bill.id} deleted`, 'You can create it again for this flat.');
       setConfirmDelete(false);
       router.replace('/billing');
@@ -146,12 +131,12 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
         danger
         title={`Delete bill #${bill.id}?`}
         description={
-          isLatestReading
-            ? `This removes the bill for ${bill.billing_period_end} and rewinds the meter to ${bill.previous_reading}, so you can create it again with the right reading. If the bill was already sent, the resident keeps the old copy.`
-            : 'This removes the bill so you can create it again for this flat. It can’t be undone.'
+          bill.current_reading != null
+            ? `This removes the bill for ${bill.billing_period_end} and puts the meter back to ${bill.previous_reading}, so you can read the flat again. If the bill was already sent, the resident keeps the old copy.`
+            : 'This removes the draft so you can create it again for this flat. It can’t be undone.'
         }
         confirmLabel="Delete bill"
-        loading={remove.isPending || patchMeter.isPending}
+        loading={remove.isPending}
         onConfirm={onDelete}
       />
     </>

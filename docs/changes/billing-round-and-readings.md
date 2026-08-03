@@ -194,21 +194,36 @@ No backend changes were needed. Verified against `master`:
 | Bulk-created flats get meters | `FlatViewSet.bulk_create` does `Meter.objects.bulk_create([...])` in the same transaction |
 | Bulk reading writes | `MeterViewSet` PATCH on `current_reading` |
 
-## Recommended backend follow-ups
+## Backend follow-ups — now done
 
-Not blocking, but the frontend is compensating for these:
+The first three items here were originally listed as things the frontend was
+compensating for. They're implemented (backend PR `feat/bill-all-flats`), and the
+frontend workarounds are gone with them:
 
-1. **Deleting a bill should rewind its meter server-side.** The client does it in
-   two requests today; a `perform_destroy` override would make it atomic and
-   correct for any caller, not just this UI.
-2. **Deleting a bill leaves its `MeterReading` row behind.** Reading history
-   keeps an entry for a bill that no longer exists. Same `perform_destroy` is the
-   place to clear it.
-3. **A dedicated bulk-readings endpoint.** N PATCHes work and fail gracefully,
-   but one request would be atomic and quicker over a phone connection.
+1. **`perform_destroy` on the bill.** Deleting an issued bill rewinds its meter to
+   that bill's baseline and drops the reading it recorded, in one transaction, and
+   declines when a later bill has already moved the meter on. The client's
+   two-request dance (delete, then PATCH the meter) is deleted — one request now,
+   and it can't half-apply.
+2. **`POST /meters/opening_readings/`.** Sets many meters in one atomic request.
+   The screen no longer batches N PATCHes: the outcome is all-or-nothing, so there
+   is no such thing as a half-saved set. Meters that already anchor an issued bill
+   come back in `skipped` and are reported in the UI rather than overwritten —
+   with the fix, correcting one means deleting the bill, which rewinds properly.
+3. **`apply_payment` no longer settles a draft.** A draft's total is 0 until a
+   reading is entered, and `amount >= 0` is trivially true, so *any* payment
+   marked it paid. Nothing is owed on a draft, and a zero total is an
+   uncalculated debt rather than a settled one.
+
+Still open:
+
 4. **Guard the round against unbillable flats.** `build_round` could flag stops
    whose flat has no apartment type, so the round warns up front instead of
-   failing at submission — see the 18 flats above.
+   failing at submission.
+5. **`useBillingRound` still derives the round client-side** from three list
+   queries, duplicating rules the server now owns in `GET /billing/rounds/<month>/`.
+   That duplication is exactly why the occupancy change had to be made in three
+   places instead of one.
 
 ## Verification
 

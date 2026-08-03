@@ -167,3 +167,18 @@ export async function markMaintenanceChargePaid(id: number): Promise<Maintenance
   );
   return data;
 }
+
+/**
+ * POST /meters/opening_readings/ — set many meters' starting figures at once.
+ *
+ * One atomic request rather than a PATCH per flat: a half-applied set would
+ * leave some flats billing from zero with no way to tell which. Meters that
+ * already have an issued bill come back in `skipped` rather than being
+ * overwritten — that reading is the anchor their bill was built on.
+ */
+export async function setOpeningReadings(
+  readings: { meter: number; current_reading: string }[],
+): Promise<{ updated: number; skipped: { meter: number; flat_number: string; reason: string }[] }> {
+  const { data } = await apiClient.post('/meters/opening_readings/', { readings });
+  return data;
+}
