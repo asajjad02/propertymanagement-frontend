@@ -578,3 +578,32 @@ export interface DocumentUploadInput {
   related_id: number;
   document_type?: string;
 }
+
+/** One stop as the server reports it — see `GET /billing/rounds/{month}/`. */
+export interface RoundStopPayload {
+  flat: number;
+  flat_number: string;
+  meter: number | null;
+  previous_reading: string;
+  read: boolean;
+  bill: ElectricityBill | null;
+  blocked: string | null;
+  blocked_kind: 'apartment_type' | 'rate' | null;
+}
+
+/**
+ * A month's round, joined server-side.
+ *
+ * Replaces walking flats + meters + bills in the browser: the bills list grows
+ * every month and was being fetched whole, twenty rows per request, to use one
+ * month of it.
+ */
+export interface BillingRound {
+  month: string;
+  period_start: string;
+  period_end: string;
+  total: number;
+  done: number;
+  remaining: number;
+  stops: RoundStopPayload[];
+}

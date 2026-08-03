@@ -1,10 +1,16 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { electricityBillHooks, meterHooks } from '@/hooks/resources';
+import * as api from '@/api/endpoints';
 import { useFlatsLookup } from '@/hooks/use-lookups';
-import type { ElectricityBill, Flat, Meter } from '@/types/api';
+import { queryKeys } from '@/lib/query-keys';
+import type { ElectricityBill, Flat } from '@/types/api';
+
+/** Matches billing/services.py, so the round and the 400 read the same. */
+const APARTMENT_TYPE_BLOCKED =
+  'This flat has no apartment type, so its maintenance charge is unknown.';
 
 /** `YYYY-MM` — the month a billing round covers. */
 export type MonthKey = string;
@@ -57,62 +63,64 @@ export interface RoundStop {
 /**
  * A billing round: one month × every flat that has a meter.
  *
- * Vacant flats are in it too. Maintenance is owed on a flat whether or not
+ * Read from `GET /billing/rounds/{month}/`, which joins it server-side. This used
+ * to be assembled here from flats + meters + *every bill ever raised*, walked
+ * twenty rows per request — a cost that grew every month and was paid on a phone,
+ * on mobile data, at the start of every round.
+ *
+ * The flats lookup stays, only to hand a row the Flat it needs to edit in place.
+ * That one is bounded by the size of the property and shared with every other
+ * screen, so it was never the part that grew.
+ *
+ * Vacant flats are in the round too. Maintenance is owed on a flat whether or not
  * anyone lives in it, and skipping a vacant flat also skipped its meter reading,
  * so the next occupant inherited a baseline nobody had checked.
  *
  * Shared by the meter round and the Overview so the two always report the same
- * progress. All three queries are cached, so a second caller costs nothing.
+ * progress. Both queries are cached, so a second caller costs nothing.
  */
 export function useBillingRound(month: MonthKey) {
   const flats = useFlatsLookup();
-  const meters = meterHooks.useAll();
-  const bills = electricityBillHooks.useAll();
+  const round = useQuery({
+    queryKey: queryKeys.billingRound(month),
+    queryFn: () => api.fetchBillingRound(month),
+  });
 
   const stops = useMemo<RoundStop[]>(() => {
-    const meterByFlat = new Map<number, Meter>();
-    for (const m of meters.data ?? []) if (!meterByFlat.has(m.flat)) meterByFlat.set(m.flat, m);
-
-    const billByFlat = new Map<number, ElectricityBill>();
-    for (const b of bills.data ?? []) {
-      if (monthKeyOf(b.billing_period_end) !== month) continue;
-      // Prefer a non-draft bill if somehow both exist for a flat this month.
-      const existing = billByFlat.get(b.flat);
-      if (!existing || (existing.status === 'draft' && b.status !== 'draft')) billByFlat.set(b.flat, b);
-    }
-
-    return (flats.data ?? [])
-      // Annotated return rather than `satisfies` on the literal: TS narrows a
-      // const to its assigned value at the use site, so the object's inferred
-      // blockedKind was narrower than RoundStop's and failed the guard below.
-      // The annotation checks the literal just as strictly.
-      .map((f): RoundStop | null => {
-        const meter = meterByFlat.get(f.id);
-        if (!meter) return null;
-        const bill = billByFlat.get(f.id) ?? null;
+    const byId = flats.map;
+    return (round.data?.stops ?? [])
+      .filter((s) => s.meter != null)
+      .map((s): RoundStop | null => {
+        const flat = byId.get(s.flat);
+        // A stop whose flat hasn't arrived in the lookup yet has nothing to edit;
+        // it reappears when that query settles.
+        if (!flat) return null;
+        /*
+         * The apartment-type verdict is taken from the flat in hand, not from the
+         * round payload. Editing a flat invalidates the flats key but not this
+         * query, so trusting the payload would leave the warning up after someone
+         * had just fixed it from the round. The rate case stays the server's to
+         * answer — rates aren't in any query here.
+         */
+        const typeMissing = flat.apartment_type == null;
+        const serverSaysType = s.blocked_kind === 'apartment_type';
         return {
-          flatId: f.id,
-          flatNumber: f.flat_number,
-          meterId: meter.id,
-          // An existing bill carries its own baseline; otherwise the meter's
-          // running value is the baseline the backend has been maintaining.
-          previousReading: bill ? bill.previous_reading : meter.current_reading,
-          // Mirrors the server's own test (billing/rounds.py `_blocked`). Rates
-          // aren't in this hook's queries, so only the flat-level cause is
-          // checked here; the server still refuses the other case.
-          blocked:
-            f.apartment_type == null
-              ? 'This flat has no apartment type, so its maintenance charge is unknown.'
-              : null,
-          blockedKind: f.apartment_type == null ? 'apartment_type' : null,
-          flat: f,
-          bill,
-          read: !!bill && bill.status !== 'draft',
+          flatId: s.flat,
+          flatNumber: s.flat_number,
+          meterId: s.meter as number,
+          previousReading: s.previous_reading,
+          bill: s.bill,
+          read: s.read,
+          blocked: typeMissing ? APARTMENT_TYPE_BLOCKED : serverSaysType ? null : s.blocked,
+          blockedKind: typeMissing ? 'apartment_type' : serverSaysType ? null : s.blocked_kind,
+          flat,
         };
       })
       .filter((s): s is RoundStop => s !== null)
+      // The server orders by flat_number as text, so '10' sorts before '2'.
+      // Re-sorted numerically here, which is the order someone walks in.
       .sort((a, b) => a.flatNumber.localeCompare(b.flatNumber, undefined, { numeric: true }));
-  }, [flats.data, meters.data, bills.data, month]);
+  }, [round.data, flats.map]);
 
   const done = stops.filter((s) => s.read).length;
 
@@ -121,25 +129,25 @@ export function useBillingRound(month: MonthKey) {
     total: stops.length,
     done,
     remaining: stops.length - done,
-    isPending: flats.isPending || meters.isPending || bills.isPending,
+    isPending: round.isPending || flats.isPending,
   };
 }
 
 /**
  * Money owed across every bill that isn't paid, in any month.
  *
- * Mirrors the backend's `outstanding_for_flat`, which also excludes only paid
- * bills. Drafts contribute nothing — their totals are zero until issued.
+ * Aggregated by the database. Summing it in the browser meant fetching every bill
+ * ever raised to add up one column, on the landing page.
  */
 export function useOutstanding() {
-  const bills = electricityBillHooks.useAll();
+  const query = useQuery({
+    queryKey: queryKeys.outstanding(),
+    queryFn: api.fetchOutstanding,
+  });
 
-  return useMemo(() => {
-    const unpaid = (bills.data ?? []).filter((b) => b.status !== 'paid' && Number(b.total_payable) > 0);
-    return {
-      amount: unpaid.reduce((sum, b) => sum + Number(b.total_payable || 0), 0),
-      billCount: unpaid.length,
-      isPending: bills.isPending,
-    };
-  }, [bills.data, bills.isPending]);
+  return {
+    amount: Number(query.data?.amount ?? 0),
+    billCount: query.data?.bill_count ?? 0,
+    isPending: query.isPending,
+  };
 }

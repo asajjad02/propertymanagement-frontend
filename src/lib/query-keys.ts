@@ -9,6 +9,14 @@ export const queryKeys = {
   auth: {
     me: ['auth', 'me'] as const,
   },
+  /*
+   * Both live under the electricity-bills namespace on purpose. Every bill
+   * mutation invalidates `['electricity-bills']`, which is a prefix of these — so
+   * issuing a reading, deleting a bill or recording a payment refreshes the round
+   * and the outstanding total without anyone having to remember to.
+   */
+  billingRound: (month: string) => ['electricity-bills', 'round', month] as const,
+  outstanding: () => ['electricity-bills', 'outstanding'] as const,
   resource: (resource: string) => ({
     all: [resource] as const,
     lists: () => [resource, 'list'] as const,

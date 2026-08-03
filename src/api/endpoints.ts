@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ApartmentType,
   ApartmentTypeInput,
+  BillingRound,
   BulkFlatsInput,
   BulkFlatsResult,
   Building,
@@ -192,5 +193,23 @@ export async function downloadRoundPdf(month: string): Promise<Blob> {
   const { data } = await apiClient.get<Blob>(`/billing/rounds/${month}/pdf/`, {
     responseType: 'blob',
   });
+  return data;
+}
+
+/** GET /billing/rounds/{month}/ — one month's stops, joined server-side. */
+export async function fetchBillingRound(month: string): Promise<BillingRound> {
+  const { data } = await apiClient.get<BillingRound>(`/billing/rounds/${month}/`);
+  return data;
+}
+
+/**
+ * GET /electricity-bills/outstanding/ — money owed, aggregated in the database.
+ *
+ * The Overview used to sum this in the browser from every bill ever raised.
+ */
+export async function fetchOutstanding(): Promise<{ amount: string; bill_count: number }> {
+  const { data } = await apiClient.get<{ amount: string; bill_count: number }>(
+    `${electricityBills.path}outstanding/`,
+  );
   return data;
 }
