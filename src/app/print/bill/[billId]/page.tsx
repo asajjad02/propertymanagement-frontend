@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 
 import { fetchBillTokens } from '@/api/endpoints';
 import { BillSheet } from '@/components/billing/bill-sheet';
@@ -25,6 +25,16 @@ function BillPrint() {
     queryFn: () => fetchBillTokens(id),
     enabled: Number.isFinite(id),
   });
+
+  // Name the saved PDF after the flat + month: Chrome's "Save as PDF" defaults
+  // to the document title, so the manager's file is "A-101 — August 2026.pdf",
+  // filed and shareable per flat without renaming.
+  useEffect(() => {
+    if (tokens?.apt) {
+      const month = tokens.billing_month ? ` — ${tokens.billing_month}` : '';
+      document.title = `${tokens.apt}${month}`;
+    }
+  }, [tokens]);
 
   if (isLoading) return <p style={stateStyle}>Loading bill…</p>;
   if (isError || !tokens) return <p style={stateStyle}>Could not load this bill.</p>;
