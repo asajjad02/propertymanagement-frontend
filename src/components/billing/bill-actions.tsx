@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Modal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
-import * as api from '@/api/endpoints';
 import { electricityBillHooks, useMarkElectricityBillPaid } from '@/hooks/resources';
 import { toApiError } from '@/lib/errors';
 import { useAuth } from '@/providers/auth-provider';
@@ -28,7 +27,6 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
   const [payment, setPayment] = useState(false);
   const [confirmPaid, setConfirmPaid] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [printing, setPrinting] = useState(false);
 
   const canWrite = hasRole('admin', 'manager', 'accountant');
   // A paid bill is a settled record with payments hanging off it; deleting it
@@ -54,29 +52,11 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
     }
   }
 
-  async function onPrint() {
-    setPrinting(true);
-    try {
-      // Fetched rather than linked: the endpoint is authenticated, so a bare
-      // <a href> would land on a 401 instead of the bill.
-      const blob = await api.downloadBillPdf(bill.id);
-      const url = URL.createObjectURL(blob);
-      const tab = window.open(url, '_blank');
-      if (!tab) {
-        // Popup blocked — fall back to a download so the bill still reaches them.
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `bill-${bill.id}.pdf`;
-        link.click();
-      }
-      // Long enough for the tab to have loaded it; the object stays alive in the
-      // tab's own document either way.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (err) {
-      toast.error('Could not open the bill', toApiError(err).message);
-    } finally {
-      setPrinting(false);
-    }
+  function onPrint() {
+    // Open the chrome-free branded bill route; it prints itself once fonts and
+    // images settle (?auto=1). Rendering in the browser is what makes the print
+    // match the on-screen bill exactly.
+    window.open(`/print/bill/${bill.id}?auto=1`, '_blank', 'noopener');
   }
 
   async function onMarkPaid() {
@@ -104,7 +84,7 @@ export function BillActions({ bill }: { bill: ElectricityBill }) {
        * nothing.
        */}
       {bill.status !== 'draft' && (
-        <Button variant="secondary" size="sm" loading={printing} disabled={printing} onClick={onPrint}>
+        <Button variant="secondary" size="sm" onClick={onPrint}>
           <Printer className="h-4 w-4" />
           Print
         </Button>

@@ -155,9 +155,9 @@ export async function updateBillTemplate(input: BillTemplateInput): Promise<Bill
   return data;
 }
 
-/** GET /billing/template/preview/ — the template rendered with sample data, as a PDF blob (authed). */
-export async function fetchBillTemplatePreview(): Promise<Blob> {
-  const { data } = await apiClient.get<Blob>('/billing/template/preview/', { responseType: 'blob' });
+/** GET /billing/template/preview-data/ — sample tokens merged with the saved branding, for the browser-rendered preview. */
+export async function fetchBillTemplatePreviewData(): Promise<Record<string, string>> {
+  const { data } = await apiClient.get<Record<string, string>>('/billing/template/preview-data/');
   return data;
 }
 
@@ -171,6 +171,14 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
 export async function globalSearch(q: string): Promise<SearchResult[]> {
   const { data } = await apiClient.get<{ results: SearchResult[] }>('/search/', { params: { q } });
   return data.results;
+}
+
+/** GET /electricity-bills/{id}/bill_data/ — display-ready tokens for the browser-rendered branded bill. */
+export async function fetchBillTokens(id: number): Promise<Record<string, string>> {
+  const { data } = await apiClient.get<Record<string, string>>(
+    `${electricityBills.path}${id}/bill_data/`,
+  );
+  return data;
 }
 
 /** GET /electricity-bills/{id}/pdf/ — the combined bill as a PDF blob (authed). */
