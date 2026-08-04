@@ -17,8 +17,11 @@ import { BILL_CSS, fillBill } from '@/lib/bill-template';
 // Page-level CSS: A4 print box, screen backdrop, and the (screen-only) toolbar.
 const PAGE_CSS = String.raw`
   @page { size: A4; margin: 0; }
-  body { margin: 0; background: #E7E2DC; }
-  .billroot { padding: 20px 12px 60px; }
+  html, body { margin: 0; background: #fff; }
+  /* This route renders under the app's root layout, whose theme (often dark)
+     sits behind it. .billroot is an opaque light document that covers it, so the
+     backdrop is never the app's dark canvas. */
+  .billroot { padding: 20px 12px 60px; background: #E7E2DC; min-height: 100vh; }
   .print-toolbar {
     position: fixed; top: 16px; right: 16px; z-index: 20; display: flex; gap: 8px;
   }
@@ -28,8 +31,8 @@ const PAGE_CSS = String.raw`
     padding: 9px 16px; cursor: pointer; box-shadow: 0 6px 18px rgba(74,52,40,.28);
   }
   @media print {
-    body { background: #fff; }
-    .billroot { padding: 0; }
+    html, body { background: #fff; }
+    .billroot { padding: 0; background: #fff; min-height: 0; }
     .print-toolbar { display: none; }
   }
 `;
@@ -127,7 +130,12 @@ export function BillSheet({
     <div
       className="billroot"
       ref={rootRef}
-      style={{ ['--ink' as string]: brand, ...(embed ? { padding: 0 } : {}) } as React.CSSProperties}
+      style={
+        {
+          ['--ink' as string]: brand,
+          ...(embed ? { padding: 0, minHeight: 0, background: '#fff' } : {}),
+        } as React.CSSProperties
+      }
     >
       <style dangerouslySetInnerHTML={{ __html: PAGE_CSS + BILL_CSS }} />
       {!embed && (
