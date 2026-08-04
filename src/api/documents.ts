@@ -16,8 +16,10 @@ export async function uploadDocument(input: DocumentUploadInput): Promise<AppDoc
 
   // The request interceptor drops the JSON content-type for FormData so the
   // browser sets multipart/form-data with the proper boundary.
-  const { data } = await apiClient.post<AppDocument>('/documents/', form);
-  return data;
+  // The endpoint supports batch upload and always returns an array; this helper
+  // uploads exactly one file, so unwrap to the single created document.
+  const { data } = await apiClient.post<AppDocument | AppDocument[]>('/documents/', form);
+  return Array.isArray(data) ? data[0] : data;
 }
 
 /** List documents attached to a given entity. */

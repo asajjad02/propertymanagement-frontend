@@ -136,7 +136,7 @@ export function BillTemplateSection() {
                   </Field>
                 </div>
 
-                <div className="flex items-end gap-4">
+                <div className="flex items-start gap-4">
                   <Field label="Brand colour" className="shrink-0">
                     {(id) => (
                       <input
