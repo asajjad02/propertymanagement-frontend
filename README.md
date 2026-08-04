@@ -1,4 +1,4 @@
-# Hash Residency — Frontend
+# Hash Residency: Frontend
 
 Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 frontend for the Hash
 Residency apartment management system. It talks to the Django REST API in
