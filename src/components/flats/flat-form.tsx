@@ -53,12 +53,17 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
    * correct for a genuinely new meter.
    */
   const [meterReading, setMeterReading] = useState('');
+  // Money owed before the system. Applied to this flat's first bill's previous
+  // balance; editable, but only meaningful before the first bill is issued.
+  const [openingBalance, setOpeningBalance] = useState(flat?.opening_balance ?? '');
 
   function resetForFlatEntry() {
     // Keep type/occupancy (likely the same for the next unit); clear the
     // per-unit fields so the user can keep entering flats quickly.
     setFlatNumber('');
     setOwner('');
+    setMeterReading('');
+    setOpeningBalance('');
     setError(null);
   }
 
@@ -119,6 +124,7 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
       // Keep the legacy flat_type label in sync with the chosen type.
       flat_type: typeName ?? flat?.flat_type ?? 'standard',
       occupancy_status: occupancy as FlatInput['occupancy_status'],
+      opening_balance: openingBalance === '' ? '0' : openingBalance,
     };
     try {
       if (flat) {
@@ -207,6 +213,28 @@ export function FlatForm({ flat, onDone }: FlatFormProps) {
             )}
           </Field>
         )}
+
+        {/* Any balance owed before the system. Folds into this flat's first
+            bill's previous balance, so the first bill is right without a manual
+            adjustment. Only meaningful before the first bill is issued. */}
+        <Field
+          label="Opening balance"
+          hint="Amount owed before the system, if any. Added to this flat's first bill."
+        >
+          {(id) => (
+            <Input
+              id={id}
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              value={openingBalance}
+              onChange={(e) => setOpeningBalance(e.target.value)}
+              placeholder="0.00"
+              className="tabular-nums"
+            />
+          )}
+        </Field>
 
         {/* Two mutually exclusive states — both worth seeing at once, and one
             tap to switch. A dropdown here hid half the answer behind a tap. */}
