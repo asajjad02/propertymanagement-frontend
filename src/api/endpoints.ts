@@ -111,9 +111,12 @@ export async function bulkCreateFlats(payload: BulkFlatsInput): Promise<BulkFlat
 
 /**
  * POST /electricity-bills/{id}/enter_reading/ — records the reading + meter
- * photo and issues the bill. Multipart, because the photo commits in the same
- * request (the backend rejects a reading without it). The api-client drops the
- * JSON Content-Type for FormData so the browser sets the multipart boundary.
+ * photo and issues the bill.
+ *
+ * Multipart, not JSON: the photo is required and commits in the same transaction
+ * as the reading, so the endpoint takes only form data. The api-client drops the
+ * JSON Content-Type for FormData so the browser sets the multipart boundary, and
+ * the Document row is created server-side — no separate upload call.
  */
 export async function enterBillReading(id: number, payload: EnterReadingInput): Promise<ElectricityBill> {
   const form = new FormData();
@@ -195,6 +198,46 @@ export async function markElectricityBillPaid(id: number): Promise<ElectricityBi
 export async function markMaintenanceChargePaid(id: number): Promise<MaintenanceCharge> {
   const { data } = await apiClient.post<MaintenanceCharge>(
     `${maintenanceCharges.path}${id}/mark_paid/`,
+  );
+  return data;
+}
+
+/**
+ * POST /meters/opening_readings/ — set many meters' starting figures at once.
+ *
+ * One atomic request rather than a PATCH per flat: a half-applied set would
+ * leave some flats billing from zero with no way to tell which. Meters that
+ * already have an issued bill come back in `skipped` rather than being
+ * overwritten — that reading is the anchor their bill was built on.
+ */
+export async function setOpeningReadings(
+  readings: { meter: number; current_reading: string }[],
+): Promise<{ updated: number; skipped: { meter: number; flat_number: string; reason: string }[] }> {
+  const { data } = await apiClient.post('/meters/opening_readings/', { readings });
+  return data;
+}
+
+/**
+ * GET /billing/rounds/{month}/pdf/ — the month's issued bills as one PDF, a page
+ * each, in flat-number order. Drafts are excluded server-side: a draft has no
+ * amounts, so its page would be a blank statement.
+ */
+export async function downloadRoundPdf(month: string): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/billing/rounds/${month}/pdf/`, {
+    responseType: 'blob',
+  });
+  return data;
+}
+
+
+/**
+ * GET /electricity-bills/outstanding/ — money owed, aggregated in the database.
+ *
+ * The Overview used to sum this in the browser from every bill ever raised.
+ */
+export async function fetchOutstanding(): Promise<{ amount: string; bill_count: number }> {
+  const { data } = await apiClient.get<{ amount: string; bill_count: number }>(
+    `${electricityBills.path}outstanding/`,
   );
   return data;
 }

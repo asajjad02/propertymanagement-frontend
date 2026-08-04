@@ -402,7 +402,9 @@ export interface ElectricityBill {
  * calculation service).
  */
 // Create only needs the flat and the period; the meter (one per flat),
-// previous_reading and previous_outstanding are all derived server-side.
+// previous_reading and previous_outstanding are all derived server-side. A
+// first-time baseline goes to the meter instead, so two clients creating bills at
+// once can't anchor to different numbers.
 export type ElectricityBillInput = Pick<
   ElectricityBill,
   'flat' | 'billing_period_start' | 'billing_period_end'
@@ -412,9 +414,15 @@ export type ElectricityBillInput = Pick<
 export interface BillingRoundStop {
   flat: number;
   flat_number: string;
+  /** The flat's one meter. Needed to write a first-time opening reading to it. */
+  meter: number | null;
   previous_reading: string;
   read: boolean;
   bill: ElectricityBill | null;
+  /** Why this stop can't be billed yet, or null — see billing/rounds.py. */
+  blocked: string | null;
+  /** Which kind of problem, so a client can offer the fix and not just name it. */
+  blocked_kind: 'apartment_type' | 'rate' | null;
 }
 
 /** GET /billing/rounds/{month}/ — a month's stops and progress in one request. */
@@ -432,8 +440,10 @@ export interface BillingRound {
 
 /**
  * Payload for POST /api/electricity-bills/{id}/enter_reading/ (multipart).
- * The meter `photo` is required and sent in the same request as the reading, so
- * the bill and its evidence are issued together.
+ *
+ * The photo is required and travels in the same request as the reading, so the
+ * server commits the two together. A bill can't end up issued with no proof
+ * attached, which is what uploading the photo as a second call allowed.
  */
 export interface EnterReadingInput {
   current_reading: string;

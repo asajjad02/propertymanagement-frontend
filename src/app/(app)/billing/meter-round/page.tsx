@@ -1,9 +1,12 @@
 'use client';
 
-import { ArrowLeft, Camera, Check } from 'lucide-react';
+import { ArrowLeft, Check, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { MeterPhotoField } from '@/components/billing/meter-photo-field';
+import { FlatFormDialog } from '@/components/flats/flat-form-dialog';
+import { PrintRoundButton } from '@/components/billing/print-round-button';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,10 +15,11 @@ import { Input } from '@/components/ui/input';
 import { SearchInput } from '@/components/ui/search-input';
 import { Skeleton, SkeletonRegion } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
-import { electricityBillHooks, useEnterBillReading } from '@/hooks/resources';
+import { electricityBillHooks, meterHooks, useEnterBillReading } from '@/hooks/resources';
 import { currentMonthKey, useBillingRound, type MonthKey, type RoundStop } from '@/hooks/use-billing-round';
 import { cn } from '@/lib/cn';
 import { billingPeriodFor } from '@/lib/billing-period';
+import { toApiError } from '@/lib/errors';
 import { numeric } from '@/lib/format';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -44,6 +48,15 @@ export default function MeterRoundPage() {
   }, [stops, query]);
 
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  // Stops that would have to invent a baseline before they can be billed — the
+  // same test MeterRow makes per row, counted here to offer the bulk screen.
+  // Includes drafts anchored at zero: those would bill from nothing too.
+  const needBaseline = stops.filter(
+    (s) =>
+      Number(s.previousReading) === 0 &&
+      (!s.bill || (s.bill.status === 'draft' && Number(s.bill.previous_reading) === 0)),
+  ).length;
 
   return (
     <div className="space-y-4 md:mx-auto md:max-w-2xl md:space-y-6">
@@ -74,7 +87,7 @@ export default function MeterRoundPage() {
         <Card>
           <EmptyState
             title="No meters to read"
-            description="The round covers occupied flats that have a meter. Mark flats occupied, or add their meters, to see them here."
+            description="The round covers every flat that has a meter. Add flats, or their meters, to see them here."
           />
         </Card>
       ) : (
@@ -132,6 +145,44 @@ export default function MeterRoundPage() {
             <SearchInput value={query} onChange={setQuery} placeholder="Jump to a flat…" />
           </div>
 
+          {/*
+           * On a first month, most flats have no starting figure and each row
+           * would ask for one mid-walk. Offer the bulk screen up front instead —
+           * opening readings get copied off a sheet at a desk, not in a stairwell.
+           */}
+          {needBaseline > 0 && (
+            <Link
+              href="/billing/opening-readings"
+              className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-raised px-4 py-3 hover:border-line"
+            >
+              <p className="text-sm text-ink">
+                <span className="font-medium tabular-nums">
+                  {needBaseline} {needBaseline === 1 ? 'flat' : 'flats'}
+                </span>
+                <span className="text-muted">
+                  {needBaseline === 1 ? ' has no' : ' have no'} previous reading yet
+                </span>
+              </p>
+              <span className="shrink-0 text-xs font-medium text-primary">
+                {needBaseline === 1 ? 'Set it' : 'Set them all'} →
+              </span>
+            </Link>
+          )}
+
+          {/*
+           * Offered once anything has been read, not only at 100%: a round often
+           * gets walked over two evenings, and the bills issued on the first are
+           * printable straight away.
+           */}
+          {done > 0 && (
+            <div className="flex items-center justify-between gap-3 rounded-card border border-hairline bg-raised px-4 py-3">
+              <p className="text-sm text-muted">
+                <span className="font-medium tabular-nums text-ink">{done}</span> issued this month
+              </p>
+              <PrintRoundButton month={month} className="h-9 shrink-0 px-3 text-xs" />
+            </div>
+          )}
+
           {visible.length === 0 ? (
             <p className="px-1 py-8 text-center text-sm text-muted">
               No pending meter matches “{query}”.
@@ -155,10 +206,32 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
   const toast = useToast();
   const enterReading = useEnterBillReading();
   const createBill = electricityBillHooks.useCreate();
+  const patchMeter = meterHooks.usePatch();
+  const deleteBill = electricityBillHooks.useDelete();
   const [reading, setReading] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const { flatNumber } = stop;
-  const working = createBill.isPending || enterReading.isPending;
+  const working =
+    createBill.isPending || enterReading.isPending || patchMeter.isPending || deleteBill.isPending;
+
+  /*
+   * A meter that has never been read sits at 0, but the dial on the wall
+   * doesn't. Billing `current - 0` would charge the resident for the meter's
+   * entire lifetime, so the first time round a flat we ask what it currently
+   * reads and use that as the baseline.
+   *
+   * A draft that was created before anyone set a baseline is anchored at 0 too,
+   * and its `previous_reading` is server-owned and read-only — so it can't be
+   * corrected in place, only replaced. Ask for the baseline here as well rather
+   * than let the round quietly bill from zero.
+   */
+  const draftAnchoredAtZero =
+    stop.bill?.status === 'draft' && Number(stop.bill.previous_reading) === 0;
+  const needsBaseline =
+    Number(stop.previousReading) === 0 && (!stop.bill || draftAnchoredAtZero);
+  const [baseline, setBaseline] = useState('');
+  const [editingFlat, setEditingFlat] = useState(false);
+  const effectivePrevious = needsBaseline && baseline ? baseline : stop.previousReading;
 
   /*
    * The photo is the evidence for the reading, so it's required, not optional —
@@ -171,13 +244,38 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     if (!reading || !photo) return;
 
     // A stop without a bill gets one now, for the month being walked. This is
-    // what lets the round cover every occupied flat instead of only the ones
-    // someone had already prepared a bill for.
+    // what lets the round cover every flat instead of only the ones someone had
+    // already prepared a bill for.
     let billId = stop.bill?.id;
+
+    // Replace a draft that's anchored at zero once we know the real baseline. A
+    // draft holds nothing but the flat and the period, so recreating it against
+    // the corrected meter loses no work — and it's the only way to move a
+    // `previous_reading` the server owns.
+    if (billId !== undefined && draftAnchoredAtZero && baseline) {
+      try {
+        await deleteBill.mutateAsync(billId);
+        billId = undefined;
+      } catch (err) {
+        toast.error('Could not set the starting reading', `${flatNumber}: ${toApiError(err).message}`);
+        return;
+      }
+    }
+
     if (billId === undefined) {
       const [y, m] = month.split('-').map(Number);
       const period = billingPeriodFor(new Date(y, m - 1, 1));
       try {
+        // The bill derives `previous_reading` from the meter's running value, so
+        // a first-time baseline is written to the meter rather than sent with
+        // the bill. One source of truth: two clients creating bills at once
+        // can't anchor to different baselines.
+        if (needsBaseline && baseline) {
+          await patchMeter.mutateAsync({
+            id: stop.meterId,
+            payload: { current_reading: baseline, previous_reading: baseline },
+          });
+        }
         const created = await createBill.mutateAsync({
           flat: stop.flatId,
           billing_period_start: period.start,
@@ -190,6 +288,13 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       }
     }
 
+    /*
+     * Reading and photo go up together: the server stores the reading, issues
+     * the bill and records the photo in one transaction, so a failed upload
+     * rolls the issue back with it. This used to be two calls, which could leave
+     * a live bill behind with no evidence attached — and, once the endpoint went
+     * multipart-only, failed outright.
+     */
     try {
       // Reading + photo go together; the server issues the bill and stores the
       // photo in one transaction, so there's no "issued but no photo" state.
@@ -197,8 +302,14 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
         id: billId,
         payload: { current_reading: reading, reading_date: TODAY, photo },
       });
-    } catch {
-      toast.error('Could not issue bill', `${flatNumber}: check the reading is above ${numeric(stop.previousReading)}.`);
+    } catch (err) {
+      // The server's own reason where it has one — "no apartment type", say — is
+      // more use than a guess about the reading. `effectivePrevious` accounts for
+      // a baseline just entered, which stop.previousReading wouldn't.
+      toast.error(
+        'Could not issue bill',
+        toApiError(err).message || `${flatNumber}: check the reading is above ${numeric(effectivePrevious)}.`,
+      );
       return;
     }
     toast.success('Bill issued', `${flatNumber} · reading ${numeric(reading)}`);
@@ -230,9 +341,65 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
     <li className="px-4 py-3.5">
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-base font-semibold text-ink">{flatNumber}</span>
-        <span className="label-mono">Prev {numeric(stop.previousReading)}</span>
+        {needsBaseline ? (
+          <span className="label-mono text-warn">First reading</span>
+        ) : (
+          <span className="label-mono">Prev {numeric(stop.previousReading)}</span>
+        )}
       </div>
 
+      {/* No history for this meter yet — ask what it reads now so the first
+          bill charges the month, not the meter's whole life. */}
+      {needsBaseline && !stop.blocked && (
+        <div className="mt-2.5">
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={baseline}
+            onChange={(e) => setBaseline(e.target.value)}
+            placeholder="Previous reading (start point)"
+            className="h-12 w-full tabular-nums"
+            aria-label={`${flatNumber} previous reading`}
+          />
+          <p className="mt-1 text-xs text-muted">
+            This meter has no history. Enter what it read at the start of the period — leave 0 only
+            if it is genuinely a new meter.
+          </p>
+        </div>
+      )}
+
+      {/*
+       * Say it before the walk, not after the photo: a blocked stop can't be
+       * issued no matter what's typed, so the inputs would only waste the trip.
+       */}
+      {stop.blocked ? (
+        <div className="mt-2 flex items-start gap-2 rounded-control bg-warn-soft px-3 py-2">
+          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warn" />
+          <p className="text-xs text-ink-secondary">
+            {stop.blocked}{' '}
+            {/*
+              * Fixed here, in a dialog, rather than by navigating away: leaving
+              * the round means losing your place in it, and the reading you were
+              * about to take. A missing rate is the exception — that's a
+              * building-wide setting, not something this flat can answer for.
+              */}
+            {stop.blockedKind === 'apartment_type' ? (
+              <button
+                type="button"
+                onClick={() => setEditingFlat(true)}
+                className="font-medium text-primary underline"
+              >
+                Set the apartment type
+              </button>
+            ) : (
+              <Link href="/rates" className="font-medium text-primary underline">
+                Configure the rate
+              </Link>
+            )}
+          </p>
+        </div>
+      ) : (
+      <>
       {/*
        * Two rows on a phone. Cramming reading + camera + Issue onto one 390px
        * line left the number field about 200px wide and the button barely
@@ -250,27 +417,9 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
           className="h-14 flex-1 text-lg tabular-nums sm:h-12 sm:text-base"
           aria-label={`${flatNumber} current reading`}
         />
-        {/* Required, so it looks unfinished until it's done rather than merely
-            available — a plain outline reads as optional. */}
-        <label
-          className={cn(
-            'flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-control border',
-            'transition-colors sm:h-12 sm:w-12',
-            photo
-              ? 'border-primary bg-primary-soft text-primary-text'
-              : 'border-dashed border-muted/60 text-ink-secondary hover:border-muted',
-          )}
-          aria-label={photo ? 'Meter photo attached — tap to retake' : 'Capture meter photo (required)'}
-        >
-          {photo ? <Check className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-          />
-        </label>
+        {/* Camera or library, then framed and re-encoded before it's held —
+            see MeterPhotoField for why that isn't just cosmetic. */}
+        <MeterPhotoField value={photo} onChange={setPhoto} compact />
       </div>
 
       <Button
@@ -292,6 +441,12 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
           {reading ? 'Photo of the meter required to issue.' : 'Enter the reading and photograph the meter.'}
         </p>
       )}
+      </>
+      )}
+
+      {/* The round refetches on save: flat mutations invalidate the whole `flats`
+          key, which is what the round's lookup reads from. */}
+      <FlatFormDialog flat={stop.flat} open={editingFlat} onOpenChange={setEditingFlat} />
     </li>
   );
 }

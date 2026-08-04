@@ -60,7 +60,11 @@ export function createResourceHooks<T, TInput>(
     const qc = useQueryClient();
     return useMutation({
       mutationFn: (payload: TInput) => resource.create(payload),
-      onSuccess: () => qc.invalidateQueries({ queryKey: keys.lists() }),
+      // keys.all is [resource] — a prefix, so this reaches lists, details *and*
+      // the `useAll` caches the lookups and the billing round read from.
+      // keys.lists() missed those, leaving a saved change invisible to any screen
+      // built on a lookup.
+      onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
     });
   }
 
@@ -70,7 +74,7 @@ export function createResourceHooks<T, TInput>(
       mutationFn: ({ id, payload }: { id: number; payload: TInput }) =>
         resource.update(id, payload),
       onSuccess: (_data, { id }) => {
-        qc.invalidateQueries({ queryKey: keys.lists() });
+        qc.invalidateQueries({ queryKey: keys.all });
         qc.invalidateQueries({ queryKey: keys.detail(id) });
       },
     });
@@ -82,7 +86,7 @@ export function createResourceHooks<T, TInput>(
       mutationFn: ({ id, payload }: { id: number; payload: Partial<TInput> }) =>
         resource.patch(id, payload),
       onSuccess: (_data, { id }) => {
-        qc.invalidateQueries({ queryKey: keys.lists() });
+        qc.invalidateQueries({ queryKey: keys.all });
         qc.invalidateQueries({ queryKey: keys.detail(id) });
       },
     });
@@ -92,7 +96,7 @@ export function createResourceHooks<T, TInput>(
     const qc = useQueryClient();
     return useMutation({
       mutationFn: (id: number) => resource.remove(id),
-      onSuccess: () => qc.invalidateQueries({ queryKey: keys.lists() }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),
     });
   }
 
