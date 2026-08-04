@@ -3,7 +3,7 @@
 import { Download, Mail, MessageCircle, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 
-import { downloadBillPdf, sendBill } from '@/api/endpoints';
+import { sendBill } from '@/api/endpoints';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
@@ -11,29 +11,18 @@ import { useToast } from '@/components/ui/toast';
 import { toApiError } from '@/lib/errors';
 
 /**
- * Produce & deliver the combined monthly bill. PDF and email are live; SMS and
- * WhatsApp aren't wired to a provider yet, so they stay honestly disabled.
+ * Produce & deliver the combined monthly bill. PDF (via the browser-rendered
+ * print route) and email are live; SMS and WhatsApp aren't wired to a provider
+ * yet, so they stay honestly disabled.
  */
 export function SendPanel({ billId }: { billId: number }) {
   const toast = useToast();
-  const [downloading, setDownloading] = useState(false);
   const [emailing, setEmailing] = useState(false);
 
-  async function download() {
-    setDownloading(true);
-    try {
-      const blob = await downloadBillPdf(billId);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `hash-residency-bill-${billId}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      toast.error('Could not generate PDF', toApiError(err).message);
-    } finally {
-      setDownloading(false);
-    }
+  function download() {
+    // The branded bill is rendered in the browser; open the print route, which
+    // prints/saves to PDF. Same output as the on-screen bill and the Print button.
+    window.open(`/print/bill/${billId}?auto=1`, '_blank', 'noopener');
   }
 
   async function email() {
@@ -54,8 +43,8 @@ export function SendPanel({ billId }: { billId: number }) {
         <CardTitle>Produce &amp; send</CardTitle>
       </CardHeader>
       <CardBody className="space-y-2">
-        <Button variant="secondary" className="w-full justify-start" onClick={download} disabled={downloading}>
-          {downloading ? <Spinner /> : <Download className="h-4 w-4" />} Download PDF
+        <Button variant="secondary" className="w-full justify-start" onClick={download}>
+          <Download className="h-4 w-4" /> Download PDF
         </Button>
         <Button variant="secondary" className="w-full justify-start" onClick={email} disabled={emailing}>
           {emailing ? <Spinner /> : <Mail className="h-4 w-4" />} Email bill

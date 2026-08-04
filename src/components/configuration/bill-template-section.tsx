@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
-import { fetchBillTemplate, fetchBillTemplatePreview, updateBillTemplate } from '@/api/endpoints';
+import { fetchBillTemplate, updateBillTemplate } from '@/api/endpoints';
 import { uploadDocument } from '@/api/documents';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,6 @@ import { useToast } from '@/components/ui/toast';
 import { toApiError } from '@/lib/errors';
 import type { BillTemplate } from '@/types/api';
 
-const PREVIEW_KEY = ['billing', 'template', 'preview'] as const;
 const TEMPLATE_KEY = ['billing', 'template'] as const;
 
 type FormState = {
@@ -62,6 +61,8 @@ export function BillTemplateSection() {
 
   const template = useQuery({ queryKey: TEMPLATE_KEY, queryFn: fetchBillTemplate });
   const [form, setForm] = useState<FormState | null>(null);
+  // Bumped after a save/logo change to reload the (iframe) preview.
+  const [previewNonce, setPreviewNonce] = useState(0);
 
   // Seed the form once the template loads (and only then, so typing isn't
   // clobbered by a refetch).
@@ -90,7 +91,7 @@ export function BillTemplateSection() {
       }),
     onSuccess: (updated) => {
       qc.setQueryData(TEMPLATE_KEY, updated);
-      qc.invalidateQueries({ queryKey: PREVIEW_KEY });
+      setPreviewNonce((n) => n + 1);
       toast.success('Bill template saved');
     },
     onError: (e) => toast.error('Could not save', toApiError(e).message),
@@ -108,7 +109,7 @@ export function BillTemplateSection() {
     },
     onSuccess: (updated) => {
       qc.setQueryData(TEMPLATE_KEY, updated);
-      qc.invalidateQueries({ queryKey: PREVIEW_KEY });
+      setPreviewNonce((n) => n + 1);
       toast.success('Logo updated');
     },
     onError: (e) => toast.error('Could not upload logo', toApiError(e).message),
@@ -203,44 +204,22 @@ export function BillTemplateSection() {
             )}
           </div>
 
-          {/* ---- Live preview ---- */}
-          <BillTemplatePreview />
+          {/* ---- Live preview: the same browser-rendered template as a real
+              bill, with sample figures + saved branding. Reloaded on save. ---- */}
+          <div className="space-y-2">
+            <p className="label-mono">Preview</p>
+            <div className="overflow-hidden rounded-card border border-hairline bg-raised">
+              <iframe
+                key={previewNonce}
+                src={`/print/bill-preview?embed=1&v=${previewNonce}`}
+                title="Bill template preview"
+                className="block w-full border-0"
+                style={{ aspectRatio: '210 / 297' }}
+              />
+            </div>
+          </div>
         </div>
       </CardBody>
     </Card>
-  );
-}
-
-/** Embeds the backend-rendered sample bill so the preview is the real thing. */
-function BillTemplatePreview() {
-  const preview = useQuery({ queryKey: PREVIEW_KEY, queryFn: fetchBillTemplatePreview });
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!preview.data) return;
-    const objectUrl = URL.createObjectURL(preview.data);
-    setUrl(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [preview.data]);
-
-  return (
-    <div className="space-y-2">
-      <p className="label-mono">Preview</p>
-      <div className="h-[520px] overflow-hidden rounded-card border border-hairline bg-raised">
-        {preview.isError ? (
-          <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted">
-            Preview unavailable.
-          </div>
-        ) : url ? (
-          <object data={url} type="application/pdf" className="h-full w-full">
-            <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted">
-              Preview can’t be shown here — save and download a bill to view it.
-            </div>
-          </object>
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted">Loading preview…</div>
-        )}
-      </div>
-    </div>
   );
 }
