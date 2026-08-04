@@ -23,40 +23,88 @@ function esc(value: unknown): string {
 }
 
 /**
- * Fill one bill's markup from its tokens. The `{{logo_cell}}` slot is built
- * first (raw HTML), then every remaining {{token}} is replaced with an escaped
- * string — a token you forgot to supply renders empty instead of leaking
- * `{{late_fee}}` onto a resident's bill.
+ * Fill one bill's markup from its tokens. Raw-HTML slots (`{{logo_cell}}`,
+ * `{{instructions_html}}`) are built first, then every remaining {{token}} is
+ * replaced with an escaped string — a token you forgot to supply renders empty
+ * instead of leaking `{{late_fee}}` onto a resident's bill.
  */
 export function fillBill(tokens: Record<string, string>): string {
   const logoCell = tokens.logo
     ? `<img class="logo-img" src="${esc(tokens.logo)}" alt="">`
     : `<div class="logo-monogram">${esc((tokens.title || '?').trim().charAt(0) || '?')}</div>`;
-  return BILL_BODY.replace(/\{\{logo_cell\}\}/g, logoCell).replace(
-    /\{\{(\w+)\}\}/g,
-    (_, key) => esc(tokens[key] ?? ''),
-  );
+
+  // Payment instructions: an automatic late-fee reminder (only when a late fee
+  // is set), then the account's configured lines. The WhatsApp line stays a
+  // fixed element in the template.
+  let lines: string[] = [];
+  try {
+    lines = JSON.parse(tokens.instructions_json || '[]');
+  } catch {
+    lines = [];
+  }
+  const items: string[] = [];
+  if (tokens.late_policy) {
+    items.push(`Pay before the due date to avoid a late payment charge of <b>Rs.&nbsp;${esc(tokens.late_policy)}</b>.`);
+  }
+  for (const line of lines) {
+    const text = String(line ?? '').trim();
+    if (text) items.push(esc(text));
+  }
+  const instructionsHtml = items.map((x) => `<li>${x}</li>`).join('\n');
+
+  return BILL_BODY
+    .replace(/\{\{logo_cell\}\}/g, logoCell)
+    .replace(/\{\{instructions_html\}\}/g, instructionsHtml)
+    .replace(/\{\{(\w+)\}\}/g, (_, key) => esc(tokens[key] ?? ''));
 }
 
-/** Sample tokens for the Configuration live preview (merged with the editor's config). */
-export const SAMPLE_TOKENS: Record<string, string> = {
-  apt: 'A-101',
-  reading_date: '01 Aug 2026',
-  billing_month: 'August 2026',
-  due_date: '10 Aug 2026',
-  previous_reading: '704',
-  current_reading: '953',
-  units: '249',
-  rate: '100',
-  electricity: '24,900',
-  maintenance: '6,000',
-  previous_balance: '',
-  other_charges: '',
-  subtotal: '30,900',
-  total: '30,900',
-  after_due: '31,400',
-  meter_photo: '',
-};
+// ---------------------------------------------------------------------------
+// Palette — the whole warm scheme is derived from one brand colour so selecting
+// a colour rethemes the bill (creams, hairlines, muted tones), not just the ink.
+// ---------------------------------------------------------------------------
+
+function hexToRgb(hex: string): [number, number, number] {
+  let h = (hex || '').replace('#', '').trim();
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  h = (h + '000000').slice(0, 6);
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function toHex(r: number, g: number, b: number): string {
+  return '#' + [r, g, b].map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+}
+
+/** Mix `a` toward `b` by `t` (0..1). */
+function mix(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  return toHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+}
+
+const WHITE = '#ffffff';
+const BLACK = '#000000';
+
+/** The full set of CSS custom properties, derived from the brand (ink) colour. */
+export function derivePalette(brand: string): Record<string, string> {
+  const ink = /^#?[0-9a-fA-F]{3,8}$/.test(brand || '') ? brand : '#4A3428';
+  return {
+    '--ink': ink,
+    '--ink-hover': mix(ink, WHITE, 0.12),
+    '--ink-2': mix(ink, WHITE, 0.44),
+    '--rule': mix(ink, WHITE, 0.56),
+    '--line': mix(ink, WHITE, 0.76),
+    '--cream-2': mix(ink, WHITE, 0.88),
+    '--cream': mix(ink, WHITE, 0.92),
+    '--auto-tint': mix(ink, WHITE, 0.96),
+    '--body-fg': mix(ink, BLACK, 0.08),
+    '--logo-ink': mix(ink, BLACK, 0.15),
+    '--meter-bg': mix(ink, WHITE, 0.9),
+    '--wa-bg': mix(ink, WHITE, 0.97),
+    '--tagline': mix(ink, WHITE, 0.86),
+    '--stub-sub': mix(ink, WHITE, 0.38),
+  };
+}
 
 export const BILL_CSS = String.raw`
   :root{
@@ -72,6 +120,10 @@ export const BILL_CSS = String.raw`
     --body-fg:    #3B2C22;
     --auto-tint:  #FBF7F2;
     --focus:      #A8452E;
+    --meter-bg:   #EDE7E0;
+    --wa-bg:      #FDFBF8;
+    --tagline:    #EBDFD4;
+    --stub-sub:   #7A6455;
 
     --font-body:  "Poppins", "Segoe UI", system-ui, sans-serif;
     --font-mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -259,7 +311,7 @@ export const BILL_CSS = String.raw`
   .meter-card{ background:var(--ink); border-radius:var(--radius); padding:8px 8px 2px; }
   .meter-frame{
     border-radius:8px; overflow:hidden; aspect-ratio:16/9;
-    background-color:#EDE7E0;
+    background-color:var(--meter-bg);
     background-size:cover; background-position:center;
     background-repeat:no-repeat;
   }
@@ -277,7 +329,7 @@ export const BILL_CSS = String.raw`
   .instr .wa{
     list-style:none; margin-left:-17px;
     display:flex; align-items:center; gap:10px;
-    background:#FDFBF8; border:1px solid var(--line);
+    background:var(--wa-bg); border:1px solid var(--line);
     border-radius:12px; padding:7px 12px; margin-top:8px;
   }
   .instr .wa svg{ width:19px; height:19px; stroke:var(--ink); fill:none; stroke-width:1.7; flex:none; }
@@ -305,7 +357,7 @@ export const BILL_CSS = String.raw`
     padding:6px 13px;
   }
   .stub-head .ttl{ font-size:11.5px; font-weight:600; letter-spacing:.15em; color:var(--ink); }
-  .stub-head .sub{ font-size:10.5px; color:#7A6455; flex:1; min-width:0;
+  .stub-head .sub{ font-size:10.5px; color:var(--stub-sub); flex:1; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .stub-head .chip{ font-size:10.5px; color:var(--ink); display:flex; align-items:baseline;
     gap:5px; white-space:nowrap; }
@@ -328,7 +380,7 @@ export const BILL_CSS = String.raw`
     font-family:var(--font-script); color:#fff; font-size:24px;
     line-height:1; margin-top:-34px; position:relative;
   }
-  .footer .tagline{ color:#EBDFD4; font-size:10.5px; font-weight:500; letter-spacing:.16em; margin-top:7px; }
+  .footer .tagline{ color:var(--tagline); font-size:10.5px; font-weight:500; letter-spacing:.16em; margin-top:7px; }
 
   @media print{
     .sheet{ margin:0; box-shadow:none; break-inside:avoid; break-after:page; }
@@ -439,9 +491,7 @@ export const BILL_BODY = String.raw`
     <div>
       <div class="instr-head">PAYMENT INSTRUCTIONS</div>
       <ul class="instr">
-        <li>Pay before the due date to avoid a late payment charge of <b>Rs.&nbsp;{{late_policy}}</b>.</li>
-        <li>Keep this bill as proof of payment. Electricity supply may be
-            suspended for overdue accounts according to building policy.</li>
+        {{instructions_html}}
         <li class="wa">
           <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L15 12l5 2v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4 5.2 2 2 0 0 1 6 3z"/></svg>
           <div class="wa-txt">

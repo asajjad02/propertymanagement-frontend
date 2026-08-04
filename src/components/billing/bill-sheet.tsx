@@ -12,7 +12,7 @@ import '@fontsource/parisienne/400.css';
 
 import { useEffect, useRef } from 'react';
 
-import { BILL_CSS, fillBill } from '@/lib/bill-template';
+import { BILL_CSS, derivePalette, fillBill } from '@/lib/bill-template';
 
 // Page-level CSS: A4 print box, screen backdrop, and the (screen-only) toolbar.
 const PAGE_CSS = String.raw`
@@ -124,7 +124,9 @@ export function BillSheet({
     return () => window.removeEventListener('resize', scaleToWidth);
   }, [embed, tokens]);
 
-  const brand = tokens.brand_color || '#4A3428';
+  // The whole warm palette is derived from the brand colour, so selecting a
+  // colour rethemes the bill (creams, hairlines, muted tones), not just the ink.
+  const palette = derivePalette(tokens.brand_color || '#4A3428');
 
   return (
     <div
@@ -132,7 +134,7 @@ export function BillSheet({
       ref={rootRef}
       style={
         {
-          ['--ink' as string]: brand,
+          ...palette,
           ...(embed ? { padding: 0, minHeight: 0, background: '#fff' } : {}),
         } as React.CSSProperties
       }
