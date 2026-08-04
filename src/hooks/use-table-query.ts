@@ -64,7 +64,13 @@ export function useTableQuery({ key, filterKeys, defaultOrdering }: UseTableQuer
     (next: URLSearchParams) => {
       const qs = next.toString();
       try {
-        localStorage.setItem(storageKey, qs);
+        // Persist the view's preferences (filters/search/ordering) but NOT the
+        // page: it's ephemeral navigation state, and restoring a stale page on a
+        // fresh visit can land on an out-of-range page (an empty/404 list) until
+        // the user touches a control. A fresh visit should always start at page 1.
+        const toPersist = new URLSearchParams(next.toString());
+        toPersist.delete('page');
+        localStorage.setItem(storageKey, toPersist.toString());
       } catch {
         // ignore
       }
