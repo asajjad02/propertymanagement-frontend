@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Segmented } from '@/components/ui/segmented';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { toApiError } from '@/lib/errors';
-import type { BillTemplate } from '@/types/api';
+import type { BillTemplate, DueDateMode } from '@/types/api';
 
 const TEMPLATE_KEY = ['billing', 'template'] as const;
 
@@ -27,7 +28,9 @@ type FormState = {
   iban: string;
   support_phone: string;
   late_fee: string;
+  due_mode: string; // DueDateMode; kept as string so the generic setter stays clean
   due_days: string;
+  due_day_of_month: string;
   instructions: string; // one line per instruction
 };
 
@@ -43,7 +46,9 @@ function toForm(t: BillTemplate): FormState {
     iban: t.iban,
     support_phone: t.support_phone,
     late_fee: t.late_fee,
+    due_mode: t.due_mode,
     due_days: String(t.due_days),
+    due_day_of_month: String(t.due_day_of_month),
     instructions: (t.instructions ?? []).join('\n'),
   };
 }
@@ -86,7 +91,9 @@ export function BillTemplateSection() {
         iban: form!.iban,
         support_phone: form!.support_phone,
         late_fee: form!.late_fee,
+        due_mode: form!.due_mode as DueDateMode,
         due_days: Number(form!.due_days) || 0,
+        due_day_of_month: Math.min(Math.max(Number(form!.due_day_of_month) || 1, 1), 31),
         instructions: form!.instructions.split('\n').map((s) => s.trim()).filter(Boolean),
       }),
     onSuccess: (updated) => {
@@ -186,10 +193,50 @@ export function BillTemplateSection() {
                   <Field label="Late fee" hint="Added after the due date">
                     {(id) => <Input id={id} type="number" inputMode="decimal" value={form.late_fee} onChange={(e) => set('late_fee', e.target.value)} />}
                   </Field>
-                  <Field label="Due days" hint="Days after period end">
-                    {(id) => <Input id={id} type="number" inputMode="numeric" value={form.due_days} onChange={(e) => set('due_days', e.target.value)} />}
-                  </Field>
                 </div>
+
+                <Field label="Due date rule" hint="How the bill's due date is worked out">
+                  {() => (
+                    <div className="space-y-3">
+                      <Segmented
+                        options={[
+                          { value: 'days_after', label: 'Days after period end' },
+                          { value: 'fixed_day', label: 'Fixed day of next month' },
+                        ]}
+                        value={form.due_mode}
+                        onValueChange={(v) => set('due_mode', v)}
+                      />
+                      {form.due_mode === 'fixed_day' ? (
+                        <Field label="Day of month" hint="e.g. 10 → always due the 10th of the next month">
+                          {(id) => (
+                            <Input
+                              id={id}
+                              type="number"
+                              inputMode="numeric"
+                              min={1}
+                              max={31}
+                              value={form.due_day_of_month}
+                              onChange={(e) => set('due_day_of_month', e.target.value)}
+                            />
+                          )}
+                        </Field>
+                      ) : (
+                        <Field label="Due days" hint="Days after the billing period ends">
+                          {(id) => (
+                            <Input
+                              id={id}
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              value={form.due_days}
+                              onChange={(e) => set('due_days', e.target.value)}
+                            />
+                          )}
+                        </Field>
+                      )}
+                    </div>
+                  )}
+                </Field>
 
                 <Field label="Payment instructions" hint="One line per instruction">
                   {(id) => <Textarea id={id} rows={4} value={form.instructions} onChange={(e) => set('instructions', e.target.value)} />}

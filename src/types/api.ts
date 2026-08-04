@@ -586,9 +586,12 @@ export type DocumentTarget =
   | 'bill_template';
 
 /** GET/PATCH /api/billing/template/ — the account's bill presentation. */
+export type DueDateMode = 'days_after' | 'fixed_day';
+
 export interface BillTemplate {
   id: number;
   logo: number | null;
+  logo_url: string | null;
   brand_color: string;
   header_title: string;
   header_subtitle: string;
@@ -599,7 +602,10 @@ export interface BillTemplate {
   iban: string;
   support_phone: string;
   late_fee: string;
+  /** 'days_after' → due_days after period end; 'fixed_day' → due_day_of_month of the next month. */
+  due_mode: DueDateMode;
   due_days: number;
+  due_day_of_month: number;
   instructions: string[];
   layout: string;
   created_at: string;
@@ -607,7 +613,7 @@ export interface BillTemplate {
 }
 
 export type BillTemplateInput = Partial<
-  Omit<BillTemplate, 'id' | 'created_at' | 'updated_at'>
+  Omit<BillTemplate, 'id' | 'logo_url' | 'created_at' | 'updated_at'>
 >;
 
 /** Named `AppDocument` to avoid clashing with the DOM `Document` type. */
