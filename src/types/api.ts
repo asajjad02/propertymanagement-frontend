@@ -180,6 +180,8 @@ export interface Flat {
   floor_number: number;
   flat_type: string;
   occupancy_status: OccupancyStatus;
+  /** Money owed before the system; folded into the flat's first bill's previous balance. */
+  opening_balance: string;
   /** Read-only: the running reading on the flat's (one) meter. */
   current_reading: string | null;
   created_at: string;
