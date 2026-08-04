@@ -7,6 +7,8 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ApartmentType,
   ApartmentTypeInput,
+  BillTemplate,
+  BillTemplateInput,
   BillingRound,
   BulkFlatsInput,
   BulkFlatsResult,
@@ -138,6 +140,24 @@ export async function fetchBillingRound(month: string): Promise<BillingRound> {
 /** POST /billing/rounds/ — create the month's draft bills (defaults to current month). */
 export async function createBillingRound(month?: string): Promise<BillingRound> {
   const { data } = await apiClient.post<BillingRound>('/billing/rounds/', month ? { month } : {});
+  return data;
+}
+
+/** GET /billing/template/ — the account's bill-presentation template. */
+export async function fetchBillTemplate(): Promise<BillTemplate> {
+  const { data } = await apiClient.get<BillTemplate>('/billing/template/');
+  return data;
+}
+
+/** PATCH /billing/template/ — update the account's bill template (admin only). */
+export async function updateBillTemplate(input: BillTemplateInput): Promise<BillTemplate> {
+  const { data } = await apiClient.patch<BillTemplate>('/billing/template/', input);
+  return data;
+}
+
+/** GET /billing/template/preview/ — the template rendered with sample data, as a PDF blob (authed). */
+export async function fetchBillTemplatePreview(): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>('/billing/template/preview/', { responseType: 'blob' });
   return data;
 }
 

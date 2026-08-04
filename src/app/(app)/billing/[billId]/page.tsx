@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 
 import { PageChrome } from '@/components/shell/page-chrome';
 import { BillActions } from '@/components/billing/bill-actions';
-import { Invoice } from '@/components/billing/invoice';
+import { BillDocument } from '@/components/billing/bill-document';
 import { PaymentPanel } from '@/components/billing/payment-panel';
 import { SendPanel } from '@/components/billing/send-panel';
 import { DetailHeader } from '@/components/ui/detail-header';
@@ -17,7 +17,7 @@ import { shortDate } from '@/lib/format';
 export default function BillDetailPage() {
   const params = useParams<{ billId: string }>();
   const billId = Number(params.billId);
-  const { bill, flat, meterNumber, payments, isLoading } = useBillDetail(billId);
+  const { bill, flat, payments, isLoading } = useBillDetail(billId);
 
   if (isLoading) {
     // Keep the app bar (back chevron + where you are) while the record
@@ -44,7 +44,7 @@ export default function BillDetailPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_1fr]">
-        <Invoice bill={bill} flat={flat} meterNumber={meterNumber} />
+        <BillDocument bill={bill} />
         <div className="space-y-6">
           <PaymentPanel bill={bill} payments={payments} />
           <SendPanel billId={bill.id} />
