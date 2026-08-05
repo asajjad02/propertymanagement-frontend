@@ -179,7 +179,7 @@ export default function MeterRoundPage() {
               <p className="text-sm text-muted">
                 <span className="font-medium tabular-nums text-ink">{done}</span> issued this month
               </p>
-              <PrintRoundButton month={month} className="h-9 shrink-0 px-3 text-xs" />
+              <PrintRoundButton className="h-9 shrink-0 px-3 text-xs" />
             </div>
           )}
 

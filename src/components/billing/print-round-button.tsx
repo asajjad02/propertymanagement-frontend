@@ -1,62 +1,43 @@
 'use client';
 
 import { Printer } from 'lucide-react';
-import { useState } from 'react';
 
-import * as api from '@/api/endpoints';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
-import { toApiError } from '@/lib/errors';
 
 /**
- * Print a whole month's bills as one document.
+ * Print every live bill as one document.
  *
  * Printing is a real delivery path — plenty of flats have an owner to hand a
- * sheet to and no email on file — and doing it a bill at a time meant sixty-six
- * downloads and sixty-six trips to the printer. The server returns one PDF with
- * a page per issued bill, in flat-number order, so this is one action.
+ * sheet to and no email on file — and doing it a bill at a time meant seventy-odd
+ * downloads and as many trips to the printer.
  *
- * Drafts aren't in it: a draft has no readings and no amounts, so its sheet would
- * be a blank statement, which is worse than a missing one.
+ * Opens the chrome-free `/print/bills` route, which prints itself once fonts and
+ * images settle (`?auto=1`) — the same shape as the single-bill Print action, and
+ * deliberately so: both render the account's branded template through the same
+ * `fillBill` path, so a bulk print and an individual bill are the same sheet.
+ *
+ * It used to download a server-rendered PDF for one billing period, which was
+ * wrong twice over: that PDF was the old pre-branding layout, and asking for a
+ * calendar month matched one bill out of seventy-four, because real billing
+ * periods aren't all calendar months. Which bills count is now decided by status
+ * — see the route for the rule and why.
  */
 export function PrintRoundButton({
-  month,
   variant = 'secondary',
   className,
 }: {
-  /** `YYYY-MM`. */
-  month: string;
   variant?: 'primary' | 'secondary';
   className?: string;
 }) {
-  const toast = useToast();
-  const [working, setWorking] = useState(false);
-
-  async function onPrint() {
-    setWorking(true);
-    try {
-      // Fetched rather than linked: the endpoint is authenticated, so a bare
-      // href would land on a 401 instead of the bills.
-      const blob = await api.downloadRoundPdf(month);
-      const url = URL.createObjectURL(blob);
-      const tab = window.open(url, '_blank');
-      if (!tab) {
-        // Popup blocked — fall back to a download so the bills still get out.
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `bills-${month}.pdf`;
-        link.click();
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (err) {
-      toast.error('Could not open the bills', toApiError(err).message);
-    } finally {
-      setWorking(false);
-    }
-  }
-
   return (
-    <Button variant={variant} loading={working} disabled={working} onClick={onPrint} className={className}>
+    <Button
+      variant={variant}
+      className={className}
+      // A plain link would be fine for the route itself, but the bills it fetches
+      // are authenticated — so it opens the app route, which carries the session,
+      // rather than a bare file URL.
+      onClick={() => window.open('/print/bills?auto=1', '_blank', 'noopener')}
+    >
       <Printer className="h-4 w-4" />
       Print all bills
     </Button>

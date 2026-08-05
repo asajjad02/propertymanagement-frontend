@@ -225,17 +225,6 @@ export async function setOpeningReadings(
   return data;
 }
 
-/**
- * GET /billing/rounds/{month}/pdf/ — the month's issued bills as one PDF, a page
- * each, in flat-number order. Drafts are excluded server-side: a draft has no
- * amounts, so its page would be a blank statement.
- */
-export async function downloadRoundPdf(month: string): Promise<Blob> {
-  const { data } = await apiClient.get<Blob>(`/billing/rounds/${month}/pdf/`, {
-    responseType: 'blob',
-  });
-  return data;
-}
 
 
 /**
