@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 
 import { MeterPhotoField } from '@/components/billing/meter-photo-field';
 import { FlatFormDialog } from '@/components/flats/flat-form-dialog';
-import { PrintRoundButton } from '@/components/billing/print-round-button';
+import { PrintAllBillsAction } from '@/components/billing/print-all-bills-action';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -207,7 +207,7 @@ export default function MeterRoundPage() {
               <p className="text-sm text-muted">
                 <span className="font-medium tabular-nums text-ink">{done}</span> issued this month
               </p>
-              <PrintRoundButton className="h-9 shrink-0 px-3 text-xs" />
+              <PrintAllBillsAction className="h-9 shrink-0 px-3 text-xs" />
             </div>
           )}
 

@@ -2,74 +2,34 @@
 
 import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 import * as api from '@/api/endpoints';
 import { BillSheetSet } from '@/components/billing/bill-sheet-set';
-import type { ElectricityBill } from '@/types/api';
+import { byFlatNumber, selectLiveBills, takeStashedBills } from '@/lib/live-bills';
 
 const stateStyle = { padding: 40, fontFamily: 'system-ui', color: '#6b6760' } as const;
 
-/** Natural order, so B-10 follows B-9 — the order the app lists flats in. */
-function byFlatNumber(a: string, b: string) {
-  return a.localeCompare(b, undefined, { numeric: true });
-}
-
-/**
- * The newest non-draft bill per flat, kept only while it's still `issued`.
- *
- * Pure, so the rule is readable and testable on its own rather than tangled with
- * query state.
- */
-function selectLiveBills(bills: ElectricityBill[]): ElectricityBill[] {
-  const newest = new Map<number, ElectricityBill>();
-  for (const bill of bills) {
-    const held = newest.get(bill.flat);
-    // Later period wins; id breaks a tie, matching the server's own ordering.
-    const isNewer =
-      !held ||
-      bill.billing_period_end > held.billing_period_end ||
-      (bill.billing_period_end === held.billing_period_end && bill.id > held.id);
-    if (isNewer) newest.set(bill.flat, bill);
-  }
-  return [...newest.values()].filter((b) => b.status === 'issued');
-}
-
-/**
- * Every live bill, each on its own A4 sheet, in the account's branded template.
- * `?auto=1` prints itself.
- *
- * "Live" is the newest non-draft bill per flat, and only while it's still
- * `issued`. Three deliberate exclusions fall out of that:
- *
- *  - **Superseded bills.** Issuing a bill rolls the flat's unpaid balance into the
- *    new one's `previous_outstanding`, so the newest bill already asks for
- *    everything the older ones did. Printing both would put the same money on
- *    paper twice.
- *  - **Paid flats.** Nothing is owed, so there's nothing to hand over — including
- *    when the paid bill is newer than an unpaid one, since paying it settled the
- *    arrears it carried.
- *  - **Drafts.** No reading and no amounts; the sheet would be a statement for
- *    Rs 0.00.
- *
- * Selecting by billing period was the previous approach and it was wrong twice
- * over. Periods in real data aren't all calendar months — this account has bills
- * running 2026-07-04 to 2026-08-04, and others covering a single day — so asking
- * for "this month" returned one bill out of seventy-four. And the question itself
- * was wrong: what gets handed out is each flat's current statement, whatever
- * period it happens to cover.
- */
 function PrintAllBills() {
   const search = useSearchParams();
 
+  /*
+   * Taken once, on mount: the dialog that opened this tab has usually already
+   * fetched every bill, so this renders immediately instead of repeating the work.
+   * Read in state rather than inline — it clears the stash, so a re-render must not
+   * come back empty-handed.
+   */
+  const [stashed] = useState(takeStashedBills);
+
   // Both statuses, because "newest per flat" can't be decided from the issued
   // ones alone: a flat whose newest bill is paid must print nothing, not fall
-  // back to an older unpaid one.
+  // back to an older unpaid one. Skipped entirely when the stash arrived.
   const lists = useQueries({
     queries: (['issued', 'paid'] as const).map((status) => ({
       queryKey: ['electricity-bills', 'print-all', status],
       // Per-viewset filterset_fields go under `filters` (see types/http.ts).
       queryFn: () => api.electricityBills.listAll({ filters: { status } }),
+      enabled: !stashed,
     })),
   });
 
@@ -96,6 +56,11 @@ function PrintAllBills() {
 
   const failed = tokenQueries.filter((q) => q.isError).length;
   const pending = tokenQueries.filter((q) => q.isPending).length;
+
+  // Opened straight from the dialog: everything is already in hand.
+  if (stashed) {
+    return <BillSheetSet bills={stashed} auto={search.get('auto') === '1'} />;
+  }
 
   if (!listsSettled) return <p style={stateStyle}>Finding bills to print…</p>;
   if (live.length === 0) {
