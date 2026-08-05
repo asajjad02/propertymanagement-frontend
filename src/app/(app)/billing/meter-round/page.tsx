@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 
 import { MeterPhotoField } from '@/components/billing/meter-photo-field';
 import { FlatFormDialog } from '@/components/flats/flat-form-dialog';
-import { PrintRoundButton } from '@/components/billing/print-round-button';
+import { PrintAllBillsAction } from '@/components/billing/print-all-bills-action';
 import { PageChrome } from '@/components/shell/page-chrome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,7 +22,14 @@ import { billingPeriodFor } from '@/lib/billing-period';
 import { toApiError } from '@/lib/errors';
 import { numeric } from '@/lib/format';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+/** Local date as `YYYY-MM-DD` — not toISOString(), which shifts to UTC and can
+ *  land on yesterday for anyone east of Greenwich. */
+function todayLocal() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 /**
  * The meter round: walk the property, photograph each meter, type its reading,
@@ -37,6 +44,13 @@ const TODAY = new Date().toISOString().slice(0, 10);
 export default function MeterRoundPage() {
   const [month, setMonth] = useState<MonthKey>(currentMonthKey);
   const [query, setQuery] = useState('');
+  /*
+   * When the readings were taken, for the whole round — one date, not one per
+   * stop: someone walks the property on a given day. It was hardcoded to "today",
+   * which is wrong whenever the walk and the data entry aren't the same day, and
+   * the date lands on the bill the resident receives.
+   */
+  const [readingDate, setReadingDate] = useState(todayLocal);
 
   // Shared with the Overview, so both report the same progress for the month.
   const { stops, total, done, isPending: loading } = useBillingRound(month);
@@ -117,6 +131,20 @@ export default function MeterRoundPage() {
               />
               <p className="label-mono shrink-0">{total - done} left</p>
             </div>
+            {/* The month is which bill this is; the date is when the dial was
+                read. Both end up on the resident's bill, so both are asked for
+                rather than assumed. */}
+            <label className="flex items-center gap-2">
+              <span className="label-mono shrink-0">Read on</span>
+              <Input
+                type="date"
+                value={readingDate}
+                max={todayLocal()}
+                onChange={(e) => setReadingDate(e.target.value || todayLocal())}
+                aria-label="Reading date"
+                className="h-10 w-auto flex-1 md:max-w-48"
+              />
+            </label>
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-sm text-ink">
                 <span className="font-semibold tabular-nums">{done}</span>
@@ -179,7 +207,7 @@ export default function MeterRoundPage() {
               <p className="text-sm text-muted">
                 <span className="font-medium tabular-nums text-ink">{done}</span> issued this month
               </p>
-              <PrintRoundButton month={month} className="h-9 shrink-0 px-3 text-xs" />
+              <PrintAllBillsAction className="h-9 shrink-0 px-3 text-xs" />
             </div>
           )}
 
@@ -191,7 +219,7 @@ export default function MeterRoundPage() {
             <Card>
               <ul className="divide-y divide-hairline">
                 {visible.map((stop) => (
-                  <MeterRow key={stop.flatId} stop={stop} month={month} />
+                  <MeterRow key={stop.flatId} stop={stop} month={month} readingDate={readingDate} />
                 ))}
               </ul>
             </Card>
@@ -202,7 +230,16 @@ export default function MeterRoundPage() {
   );
 }
 
-function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
+function MeterRow({
+  stop,
+  month,
+  readingDate,
+}: {
+  stop: RoundStop;
+  month: MonthKey;
+  /** When the reading was taken — chosen once for the whole round. */
+  readingDate: string;
+}) {
   const toast = useToast();
   const enterReading = useEnterBillReading();
   const createBill = electricityBillHooks.useCreate();
@@ -300,7 +337,7 @@ function MeterRow({ stop, month }: { stop: RoundStop; month: MonthKey }) {
       // photo in one transaction, so there's no "issued but no photo" state.
       await enterReading.mutateAsync({
         id: billId,
-        payload: { current_reading: reading, reading_date: TODAY, photo },
+        payload: { current_reading: reading, reading_date: readingDate, photo },
       });
     } catch (err) {
       // The server's own reason where it has one — "no apartment type", say — is
